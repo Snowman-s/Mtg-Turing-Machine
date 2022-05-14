@@ -10,39 +10,104 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class ImageLoader {
-    private static Image errorImage = new BufferedImage(223, 311, Image.SCALE_DEFAULT);
+    private static final Image errorImage = new BufferedImage(223, 311, Image.SCALE_DEFAULT);
 
     private ImageLoader() {
 
+    }
+
+    private static Path getSaveDirectory(String lang) throws IOException {
+        var dir = Path.of("./cards/" + lang);
+        if (!Files.exists(dir)) {
+            Files.createDirectories(dir);
+        }
+
+        return dir;
     }
 
     public static Image loadCardImage(String englishCardName, String language) {
         Objects.requireNonNull(language);
         Objects.requireNonNull(englishCardName);
 
+        try {
+            var image = loadImageFromFile(englishCardName, language);
+            System.out.println("ImageLoader: " + englishCardName + " was loaded from tmp file.");
+            return image;
+        } catch (IOException e) {
+            var image = loadImageFromCardAPI(englishCardName, language);
+            System.out.println("ImageLoader: " + englishCardName + " was loaded from API.");
+            return image;
+        }
+    }
+
+    private static Image loadImageFromFile(String englishCardName, String language) throws IOException {
+        var saveDir = getSaveDirectory(language);
+        try (InputStream in = Files.newInputStream(saveDir.resolve(englishCardName + ".png"))) {
+            var image = ImageIO.read(in);
+            if (image == null) throw new IOException("could not read image from file");
+            return image;
+        }
+    }
+
+    private static Image loadImageFromCardAPI(String englishCardName, String language) {
         var cards = CardAPI.getAllCards(List.of("name=" + englishCardName));
 
         if (cards.isEmpty()) return errorImage;
         var card = cards.get(0);
 
-        var myLangInfo =
-                Arrays.stream(card.getForeignNames())
-                        .filter(info -> language.equals(info.getLanguage()))
-                        .findAny();
+        var myLangInfo = Optional.ofNullable(card.getForeignNames())
+                .flatMap(
+                        array -> Arrays.stream(array)
+                                .filter(info -> language.equals(info.getLanguage()))
+                                .findAny()
+                );
         var imageUrl = myLangInfo.map(ForeignData::getImageUrl).orElseGet(card::getImageUrl);
+
+        if (imageUrl == null) {
+            imageUrl = getCardImageUrlCannotGetUsualWay(englishCardName, language, card.getMultiverseid());
+        }
 
         var request = new Request.Builder().url(imageUrl).build();
         var call = new OkHttpClient().newCall(request);
+
+        BufferedImage image;
         try (InputStream in = call.execute().body().byteStream()) {
-            return ImageIO.read(in);
+            image = ImageIO.read(in);
         } catch (IOException e) {
-            System.err.println(e.getMessage());
+            e.printStackTrace();
             return errorImage;
         }
+        try {
+            var saveDir = getSaveDirectory(language);
+            try (OutputStream os = Files.newOutputStream(saveDir.resolve(englishCardName + ".png"))) {
+                ImageIO.write(image, "png", os);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            //一時ファイルとしての保存なので失敗しても支障はない。
+        }
+
+        return image;
+    }
+
+    private static String getCardImageUrlCannotGetUsualWay(String englishCardName, String language, int multiverseId) {
+        //間に合わせで無理やり画像を提示する場所
+
+        var map = Map.of(
+                "Wheel of Sun and Moon", Map.of(
+                        "Japanese", "https://gatherer.wizards.com/Handlers/Image.ashx?multiverseid=174118&type=card",
+                        "English", "https://gatherer.wizards.com/Handlers/Image.ashx?multiverseid=146740&type=card"
+                )
+        );
+        return map
+                .getOrDefault(englishCardName, Collections.emptyMap())
+                .getOrDefault(language, "https://gatherer.wizards.com/Handlers/Image.ashx?multiverseid=" + multiverseId + "&type=card");
     }
 }
