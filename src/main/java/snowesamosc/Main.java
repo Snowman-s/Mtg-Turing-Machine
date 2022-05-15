@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Main extends PApplet {
-    private final Map<String, PImage> images = Collections.synchronizedMap(new HashMap<>());
+    private final Map<CardList, PImage> images = Collections.synchronizedMap(new HashMap<>());
 
     public static void main(String[] args) {
         PApplet.main("snowesamosc.Main");
@@ -23,7 +23,7 @@ public class Main extends PApplet {
     public void setup() {
         for (var v : CardList.values()) {
             var cardName = v.getOriginalName();
-            new Thread(() -> this.images.put(cardName,
+            new Thread(() -> this.images.put(v,
                     new PImage(ImageLoader.loadCardImage(cardName, "Japanese")))).start();
         }
     }
