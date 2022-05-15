@@ -15,6 +15,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.Function;
 
 public class ImageLoader {
     private static final Image errorImage = new BufferedImage(223, 311, Image.SCALE_DEFAULT);
@@ -30,6 +32,28 @@ public class ImageLoader {
         }
 
         return dir;
+    }
+
+    public static <T> EnumMap<CardList, T> loadAllCardImage
+            (EnumSet<CardList> englishCardNames, String language, Function<Image, T> mapper) {
+        var count = new CountDownLatch(englishCardNames.size());
+        EnumMap<CardList, T> map = new EnumMap<>(CardList.class);
+
+        for (var card : englishCardNames) {
+            new Thread(() -> {
+                map.put(card, mapper.apply(loadCardImage(card.getOriginalName(), language)));
+                count.countDown();
+            }).start();
+        }
+
+        try {
+            count.await();
+        } catch (InterruptedException e) {
+            System.err.println("画像ロードに失敗しました。プログラムを終了します。");
+            System.exit(-1);
+        }
+
+        return map;
     }
 
     public static Image loadCardImage(String englishCardName, String language) {

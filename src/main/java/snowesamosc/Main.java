@@ -3,12 +3,15 @@ package snowesamosc;
 import processing.core.PApplet;
 import processing.core.PImage;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 public class Main extends PApplet {
-    private final Map<CardList, PImage> images = Collections.synchronizedMap(new HashMap<>());
+    private EnumMap<CardList, PImage> images = new EnumMap<>(CardList.class);
+    private AtomicBoolean imageLoadEnded = new AtomicBoolean(false);
 
     public static void main(String[] args) {
         PApplet.main("snowesamosc.Main");
@@ -16,27 +19,38 @@ public class Main extends PApplet {
 
     @Override
     public void settings() {
-        this.size(500, 500);
+        this.size((int) (this.displayWidth * 0.5), (int) (this.displayHeight * 0.5));
     }
 
     @Override
     public void setup() {
-        for (var v : CardList.values()) {
-            var cardName = v.getOriginalName();
-            new Thread(() -> this.images.put(v,
-                    new PImage(ImageLoader.loadCardImage(cardName, "Japanese")))).start();
-        }
+        new Thread(() -> {
+            this.images = ImageLoader.loadAllCardImage(EnumSet.allOf(CardList.class), "Japanese", PImage::new);
+            this.imageLoadEnded.set(true);
+        }).start();
     }
 
     @Override
     public void draw() {
         this.background(0);
-        synchronized (this.images) {
-            int i = 0;
-            for (var e : this.images.entrySet()) {
-                this.image(e.getValue(), i * 20, 0);
-                i++;
-            }
+        if (!this.imageLoadEnded.get()) {
+            this.pushStyle();
+            this.noFill();
+            this.stroke(255);
+            this.strokeWeight(5);
+            float radius = min(this.width / 2F, this.height / 2F);
+            this.arc(this.width / 2F, this.height / 2F, radius, radius,
+                    this.frameCount / 30F, this.frameCount / 30F + PI / 2);
+            this.popStyle();
+            return;
+        }
+        var keyList = this.images.keySet().stream()
+                .sorted(Comparator.comparing(CardList::getOriginalName))
+                .collect(Collectors.toList());
+        int i = 0;
+        for (var key : keyList) {
+            this.image(this.images.get(key), i * 20, 0);
+            i++;
         }
     }
 }
