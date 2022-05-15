@@ -10,8 +10,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class Main extends PApplet {
+    private final AtomicBoolean imageLoadEnded = new AtomicBoolean(false);
     private EnumMap<CardList, PImage> images = new EnumMap<>(CardList.class);
-    private AtomicBoolean imageLoadEnded = new AtomicBoolean(false);
 
     public static void main(String[] args) {
         PApplet.main("snowesamosc.Main");
