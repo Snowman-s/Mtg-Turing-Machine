@@ -1,4 +1,4 @@
-package snowesamosc;
+package snowesamosc.mtgturing.cards;
 
 public enum CardList {
     RotlungReanimator("Rotlung Reanimator"),

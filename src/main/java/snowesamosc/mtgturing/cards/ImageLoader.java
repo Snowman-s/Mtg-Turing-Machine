@@ -1,4 +1,4 @@
-package snowesamosc;
+package snowesamosc.mtgturing.cards;
 
 import io.magicthegathering.javasdk.api.CardAPI;
 import io.magicthegathering.javasdk.resource.ForeignData;
