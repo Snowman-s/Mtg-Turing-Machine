@@ -1,4 +1,4 @@
-package snowesamosc.mtgturing.cards;
+package snowesamosc.mtgturing;
 
 import io.magicthegathering.javasdk.api.CardAPI;
 import io.magicthegathering.javasdk.resource.ForeignData;
@@ -102,7 +102,7 @@ public class ImageLoader {
         var call = new OkHttpClient().newCall(request);
 
         BufferedImage image;
-        try (InputStream in = call.execute().body().byteStream()) {
+        try (InputStream in = Objects.requireNonNull(call.execute().body()).byteStream()) {
             image = ImageIO.read(in);
         } catch (IOException e) {
             e.printStackTrace();

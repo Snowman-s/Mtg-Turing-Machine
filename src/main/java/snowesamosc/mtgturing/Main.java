@@ -1,4 +1,4 @@
-package snowesamosc.mtgturing.cards;
+package snowesamosc.mtgturing;
 
 import processing.core.PApplet;
 import processing.core.PImage;
@@ -14,7 +14,7 @@ public class Main extends PApplet {
     private EnumMap<CardList, PImage> images = new EnumMap<>(CardList.class);
 
     public static void main(String[] args) {
-        PApplet.main("snowesamosc.mtgturing.cards.Main");
+        PApplet.main("snowesamosc.mtgturing.Main");
     }
 
     @Override
