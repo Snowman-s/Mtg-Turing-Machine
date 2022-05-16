@@ -34,10 +34,10 @@ public class ImageLoader {
         return dir;
     }
 
-    public static <T> EnumMap<CardList, T> loadAllCardImage
-            (EnumSet<CardList> englishCardNames, String language, Function<Image, T> mapper) {
+    public static <T> EnumMap<CardType, T> loadAllCardImage
+            (EnumSet<CardType> englishCardNames, String language, Function<Image, T> mapper) {
         var count = new CountDownLatch(englishCardNames.size());
-        EnumMap<CardList, T> map = new EnumMap<>(CardList.class);
+        EnumMap<CardType, T> map = new EnumMap<>(CardType.class);
 
         for (var card : englishCardNames) {
             new Thread(() -> {
@@ -83,8 +83,9 @@ public class ImageLoader {
     private static Image loadImageFromCardAPI(String englishCardName, String language) {
         var cards = CardAPI.getAllCards(List.of("name=" + englishCardName));
 
-        if (cards.isEmpty()) return errorImage;
-        var card = cards.get(0);
+        var optionalCard = cards.stream().filter(c->c.getName().equals(englishCardName)).findAny();
+        if (optionalCard.isEmpty()) return errorImage;
+        var card = optionalCard.get();
 
         var myLangInfo = Optional.ofNullable(card.getForeignNames())
                 .flatMap(

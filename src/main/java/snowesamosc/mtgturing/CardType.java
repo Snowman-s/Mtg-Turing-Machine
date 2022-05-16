@@ -1,6 +1,6 @@
 package snowesamosc.mtgturing;
 
-public enum CardList {
+public enum CardType {
     RotlungReanimator("Rotlung Reanimator"),
     XathridNecromancer("Xathrid Necromancer"),
     CloakOfInvisibility("Cloak of Invisibility"),
@@ -24,11 +24,12 @@ public enum CardList {
     SoulSnuffers("Soul Snuffers"),
     PrismaticLace("Prismatic Lace"),
     CoalitionVictory("Coalition Victory"),
+    Infest("Infest")
     ;
 
     private final String originalName;
 
-    CardList(String originalName) {
+    CardType(String originalName) {
         this.originalName = originalName;
     }
 
