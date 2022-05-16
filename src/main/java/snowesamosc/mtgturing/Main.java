@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class Main extends PApplet {
     private final AtomicBoolean imageLoadEnded = new AtomicBoolean(false);
-    private EnumMap<CardType, PImage> images = new EnumMap<>(CardType.class);
+    private EnumMap<CardType, CardLoader.CardInfo<PImage>> images = new EnumMap<>(CardType.class);
 
     public static void main(String[] args) {
         PApplet.main("snowesamosc.mtgturing.Main");
@@ -25,7 +25,7 @@ public class Main extends PApplet {
     @Override
     public void setup() {
         new Thread(() -> {
-            this.images = ImageLoader.loadAllCardImage(EnumSet.allOf(CardType.class), "Japanese", PImage::new);
+            this.images = CardLoader.loadAllCard(EnumSet.allOf(CardType.class), "Japanese", PImage::new);
             this.imageLoadEnded.set(true);
         }).start();
 
@@ -125,7 +125,7 @@ public class Main extends PApplet {
     }
 
     private void renderCard(RealCard card, float x, float y) {
-        this.image(this.images.get(card.getType()), x, y, this.getCardWidth(), this.getCardHeight());
+        this.image(this.images.get(card.getType()).mappedImage(), x, y, this.getCardWidth(), this.getCardHeight());
     }
 
     private Player createAlice() {

@@ -8,20 +8,19 @@ import okhttp3.Request;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
-public class ImageLoader {
-    private static final Image errorImage = new BufferedImage(223, 311, Image.SCALE_DEFAULT);
+public class CardLoader {
+    private static final BufferedImage errorImage = new BufferedImage(223, 311, Image.SCALE_DEFAULT);
 
-    private ImageLoader() {
+    private CardLoader() {
 
     }
 
@@ -34,14 +33,23 @@ public class ImageLoader {
         return dir;
     }
 
-    public static <T> EnumMap<CardType, T> loadAllCardImage
-            (EnumSet<CardType> englishCardNames, String language, Function<Image, T> mapper) {
+    private static Path getCardTextSaveDirectory(String lang) throws IOException {
+        var dir = getSaveDirectory(lang).resolve("./texts/");
+        if (!Files.exists(dir)) {
+            Files.createDirectories(dir);
+        }
+
+        return dir;
+    }
+
+    public static <I> EnumMap<CardType, CardInfo<I>> loadAllCard
+            (EnumSet<CardType> englishCardNames, String language, Function<Image, I> mapper) {
         var count = new CountDownLatch(englishCardNames.size());
-        EnumMap<CardType, T> map = new EnumMap<>(CardType.class);
+        EnumMap<CardType, CardInfo<I>> map = new EnumMap<>(CardType.class);
 
         for (var card : englishCardNames) {
             new Thread(() -> {
-                map.put(card, mapper.apply(loadCardImage(card.getOriginalName(), language)));
+                map.put(card, loadCard(card.getOriginalName(), language, mapper));
                 count.countDown();
             }).start();
         }
@@ -49,42 +57,49 @@ public class ImageLoader {
         try {
             count.await();
         } catch (InterruptedException e) {
-            System.err.println("画像ロードに失敗しました。プログラムを終了します。");
+            System.err.println("カード情報のロードに失敗しました。プログラムを終了します。");
             System.exit(-1);
         }
 
         return map;
     }
 
-    public static Image loadCardImage(String englishCardName, String language) {
+    public static <I> CardInfo<I> loadCard(String englishCardName, String language, Function<Image, I> mapper) {
         Objects.requireNonNull(language);
         Objects.requireNonNull(englishCardName);
 
         try {
-            var image = loadImageFromFile(englishCardName, language);
-            System.out.println("ImageLoader: " + englishCardName + " was loaded from tmp file.");
-            return image;
+            var info = loadCardInfoFromFile(englishCardName, language, mapper);
+            System.out.println("CardLoader: " + englishCardName + " was loaded from tmp file.");
+            return info;
         } catch (IOException e) {
-            var image = loadImageFromCardAPI(englishCardName, language);
-            System.out.println("ImageLoader: " + englishCardName + " was loaded from API.");
-            return image;
+            var info = loadCardInfoFromCardAPI(englishCardName, language, mapper);
+            System.out.println("CardLoader: " + englishCardName + " was loaded from API.");
+            return info;
         }
     }
 
-    private static Image loadImageFromFile(String englishCardName, String language) throws IOException {
+    private static <I> CardInfo<I> loadCardInfoFromFile(String englishCardName, String language, Function<Image, I> mapper) throws IOException {
         var saveDir = getSaveDirectory(language);
+        var textDir = getCardTextSaveDirectory(language);
+        Image image;
+        String txt;
         try (InputStream in = Files.newInputStream(saveDir.resolve(englishCardName + ".png"))) {
-            var image = ImageIO.read(in);
+            image = ImageIO.read(in);
             if (image == null) throw new IOException("could not read image from file");
-            return image;
         }
+        try (BufferedReader reader = Files.newBufferedReader(textDir.resolve(englishCardName + ".txt"))) {
+            txt = reader.lines().collect(Collectors.joining());
+        }
+
+        return new CardInfo<>(txt, mapper.apply(image));
     }
 
-    private static Image loadImageFromCardAPI(String englishCardName, String language) {
+    private static <I> CardInfo<I> loadCardInfoFromCardAPI(String englishCardName, String language, Function<Image, I> mapper) {
         var cards = CardAPI.getAllCards(List.of("name=" + englishCardName));
 
-        var optionalCard = cards.stream().filter(c->c.getName().equals(englishCardName)).findAny();
-        if (optionalCard.isEmpty()) return errorImage;
+        var optionalCard = cards.stream().filter(c -> c.getName().equals(englishCardName)).findAny();
+        if (optionalCard.isEmpty()) return new CardInfo<>("Load Failed", mapper.apply(errorImage));
         var card = optionalCard.get();
 
         var myLangInfo = Optional.ofNullable(card.getForeignNames())
@@ -94,6 +109,7 @@ public class ImageLoader {
                                 .findAny()
                 );
         var imageUrl = myLangInfo.map(ForeignData::getImageUrl).orElseGet(card::getImageUrl);
+        var cardText = myLangInfo.map(ForeignData::getText).orElseGet(card::getText);
 
         if (imageUrl == null) {
             imageUrl = getCardImageUrlCannotGetUsualWay(englishCardName, language, card.getMultiverseid());
@@ -107,19 +123,23 @@ public class ImageLoader {
             image = ImageIO.read(in);
         } catch (IOException e) {
             e.printStackTrace();
-            return errorImage;
+            image = errorImage;
         }
         try {
             var saveDir = getSaveDirectory(language);
             try (OutputStream os = Files.newOutputStream(saveDir.resolve(englishCardName + ".png"))) {
                 ImageIO.write(image, "png", os);
             }
+            var textSaveDir = getCardTextSaveDirectory(language);
+            try (BufferedWriter writer = Files.newBufferedWriter(textSaveDir.resolve(englishCardName + ".txt"))) {
+                writer.write(cardText);
+            }
         } catch (IOException e) {
             e.printStackTrace();
             //一時ファイルとしての保存なので失敗しても支障はない。
         }
 
-        return image;
+        return new CardInfo<>(cardText, mapper.apply(image));
     }
 
     private static String getCardImageUrlCannotGetUsualWay(String englishCardName, String language, int multiverseId) {
@@ -134,5 +154,9 @@ public class ImageLoader {
         return map
                 .getOrDefault(englishCardName, Collections.emptyMap())
                 .getOrDefault(language, "https://gatherer.wizards.com/Handlers/Image.ashx?multiverseid=" + multiverseId + "&type=card");
+    }
+
+    public static record CardInfo<I>(String cardText, I mappedImage) {
+
     }
 }
