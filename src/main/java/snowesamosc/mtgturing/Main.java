@@ -30,8 +30,8 @@ public class Main extends PApplet {
         }).start();
 
         Game.getInstance().init(
-                createBob(),
-                createAlice(),
+                this.createBob(),
+                this.createAlice(),
                 System.out::println
         );
     }
@@ -65,21 +65,21 @@ public class Main extends PApplet {
         this.pushStyle();
         this.fill(0);
         this.stroke(255);
-        this.rect(0, 0, getOpPanelWidth(), height);
+        this.rect(0, 0, this.getOpPanelWidth(), this.height);
         this.popStyle();
 
-        final float caX = getOpPanelWidth(); //cardAreaX
+        final float caX = this.getOpPanelWidth(); //cardAreaX
 
         this.pushStyle();
         //bob
         {
-            AtomicReference<Float> lastX = new AtomicReference<>(caX- getCardWidth() * 0.8F);
+            AtomicReference<Float> lastX = new AtomicReference<>(caX - this.getCardWidth() * 0.8F);
             AtomicReference<CardType> beforeCardType = new AtomicReference<>(null);
             bob.field().forEach(
                 card -> {
                     var type = card.getType();
-                    var deltaX =  (beforeCardType.get() == type ? getCardWidth() / 10F: getCardWidth() * 0.8F);
-                    renderCard(card, lastX.get() + deltaX, 0);
+                    var deltaX = (beforeCardType.get() == type ? this.getCardWidth() / 10F : this.getCardWidth() * 0.8F);
+                    this.renderCard(card, lastX.get() + deltaX, 0);
                     lastX.set(lastX.get() + deltaX);
                     beforeCardType.set(type);
                 }
@@ -90,20 +90,20 @@ public class Main extends PApplet {
             AtomicInteger handsCount = new AtomicInteger();
             alice.hands().forEach(
                     card -> {
-                        renderCard(card, caX + handsCount.get() * getCardWidth(), height - getCardHeight());
+                        this.renderCard(card, caX + handsCount.get() * this.getCardWidth(), this.height - this.getCardHeight());
                         handsCount.getAndIncrement();
                     }
             );
         }
         {
-            AtomicReference<Float> lastX = new AtomicReference<>(caX - getCardWidth() * 0.8F);
+            AtomicReference<Float> lastX = new AtomicReference<>(caX - this.getCardWidth() * 0.8F);
             AtomicReference<CardType> beforeCardType = new AtomicReference<>(null);
             alice.field().stream().sorted(Comparator.comparing(RealCard::getType)).forEach(
                     card -> {
                         var type = card.getType();
                         if(type == CardType.CloakOfInvisibility) return;
-                        var deltaX =  (beforeCardType.get() == type ? getCardWidth() / 10F: getCardWidth() * 0.8F);
-                        renderCard(card, lastX.get() + deltaX, height - 2 * getCardHeight());
+                        var deltaX = (beforeCardType.get() == type ? this.getCardWidth() / 10F : this.getCardWidth() * 0.8F);
+                        this.renderCard(card, lastX.get() + deltaX, this.height - 2 * this.getCardHeight());
                         lastX.set(lastX.get() + deltaX);
                         beforeCardType.set(type);
                     }
@@ -112,20 +112,23 @@ public class Main extends PApplet {
         this.popStyle();
     }
 
-    private float getCardWidth(){
-        return (height / 5F) / 1.396F;
-    }
-    private float getCardHeight(){
-        return height / 5F;
-    }
-    private float getOpPanelWidth(){
-        return width / 8F;
-    }
-    private void renderCard(RealCard card, float x, float y){
-        image(images.get(card.getType()), x, y, getCardWidth(), getCardHeight());
+    private float getCardWidth() {
+        return this.getCardHeight() / 1.396F;
     }
 
-    private Player createAlice(){
+    private float getCardHeight() {
+        return this.height / 5F;
+    }
+
+    private float getOpPanelWidth() {
+        return this.width / 8F;
+    }
+
+    private void renderCard(RealCard card, float x, float y) {
+        this.image(this.images.get(card.getType()), x, y, this.getCardWidth(), this.getCardHeight());
+    }
+
+    private Player createAlice() {
         var fields = new ArrayList<RealCard>();
         for (int i = 0; i < 29; i++) {
             fields.add(RealCard.createCard(CardType.CloakOfInvisibility));
