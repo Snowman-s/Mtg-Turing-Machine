@@ -1,6 +1,6 @@
 package snowesamosc.mtgturing;
 
-public enum CardType {
+public enum CardKind {
     RotlungReanimator("Rotlung Reanimator"),
     XathridNecromancer("Xathrid Necromancer"),
     CloakOfInvisibility("Cloak of Invisibility"),
@@ -29,7 +29,7 @@ public enum CardType {
 
     private final String originalName;
 
-    CardType(String originalName) {
+    CardKind(String originalName) {
         this.originalName = originalName;
     }
 

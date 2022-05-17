@@ -11,16 +11,18 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 public class Main extends PApplet {
     private final AtomicBoolean imageLoadEnded = new AtomicBoolean(false);
-    private EnumMap<CardType, CardLoader.CardInfo<PImage>> cardInfos = new EnumMap<>(CardType.class);
+    private EnumMap<CardKind, CardLoader.CardInfo<PImage>> cardInfos = new EnumMap<>(CardKind.class);
     private RealCard selectedCard = null;
     private PFont cardTextFont = null;
 
     private List<CardGeometry> cardGeometries = new ArrayList<>();
 
     public static void main(String[] args) {
+        Property.getInstance().setLanguage("Japanese");
         PApplet.main("snowesamosc.mtgturing.Main");
     }
 
@@ -31,8 +33,10 @@ public class Main extends PApplet {
 
     @Override
     public void setup() {
+        var prop = Property.getInstance();
+
         new Thread(() -> {
-            this.cardInfos = CardLoader.loadAllCard(EnumSet.allOf(CardType.class), "Japanese", PImage::new);
+            this.cardInfos = CardLoader.loadAllCard(EnumSet.allOf(CardKind.class), prop.getLanguage(), PImage::new);
             this.imageLoadEnded.set(true);
         }).start();
         new Thread(() -> {
@@ -84,9 +88,16 @@ public class Main extends PApplet {
             {
                 var name = cardInfo.cardName();
                 var text = cardInfo.cardText();
-                this.text(name, 0, this.getOpPanelWidth() * this.getCardAspectRatio() + 15);
-                this.text(text, 0, this.getOpPanelWidth() * this.getCardAspectRatio() + 30,
-                        this.getOpPanelWidth(), this.height - this.getOpPanelWidth() * this.getCardAspectRatio());
+                var offsetY = this.getOpPanelWidth() * this.getCardAspectRatio() + 15;
+                this.text(name, 0, offsetY);
+                offsetY += 15;
+                if (!this.selectedCard.getCreatureTypes().isEmpty()) {
+                    this.text(this.selectedCard.getCreatureTypes().stream()
+                            .map(type -> Property.getInstance().translate(type))
+                            .collect(Collectors.joining(" ")), 0, offsetY);
+                    offsetY += 15;
+                }
+                this.text(text, 0, offsetY, this.getOpPanelWidth(), this.height - offsetY);
             }
             this.popStyle();
         }
@@ -107,7 +118,7 @@ public class Main extends PApplet {
         final float caX = this.getOpPanelWidth(); //cardAreaX
         {
             AtomicReference<Float> lastX = new AtomicReference<>(caX - this.getCardWidth() * 0.8F);
-            AtomicReference<CardType> beforeCardType = new AtomicReference<>(null);
+            AtomicReference<CardKind> beforeCardType = new AtomicReference<>(null);
             bob.field().forEach(
                     card -> {
                         var type = card.getType();
@@ -134,11 +145,11 @@ public class Main extends PApplet {
         }
         {
             AtomicReference<Float> lastX = new AtomicReference<>(caX - this.getCardWidth() * 0.8F);
-            AtomicReference<CardType> beforeCardType = new AtomicReference<>(null);
+            AtomicReference<CardKind> beforeCardType = new AtomicReference<>(null);
             alice.field().stream().sorted(Comparator.comparing(RealCard::getType)).forEach(
                     card -> {
                         var type = card.getType();
-                        if (type == CardType.CloakOfInvisibility) return;
+                        if (type == CardKind.CloakOfInvisibility) return;
                         var deltaX = (beforeCardType.get() == type ? this.getCardWidth() / 10F : this.getCardWidth() * 0.8F);
                         this.cardGeometries.add(new CardGeometry(card,
                                 new Rectangle2D.Float(lastX.get() + deltaX, this.height - 2 * this.getCardHeight(),
@@ -198,38 +209,38 @@ public class Main extends PApplet {
     private Player createAlice() {
         var fields = new ArrayList<RealCard>();
         for (int i = 0; i < 29; i++) {
-            fields.add(RealCard.createCard(CardType.CloakOfInvisibility));
+            fields.add(RealCard.createCard(CardKind.CloakOfInvisibility));
         }
         for (int i = 0; i < 7; i++) {
-            fields.add(RealCard.createCard(CardType.CloakOfInvisibility));
+            fields.add(RealCard.createCard(CardKind.CloakOfInvisibility));
         }
-        fields.add(RealCard.createCard(CardType.WheelOfSunAndMoon));
-        fields.add(RealCard.createCard(CardType.IllusoryGains));
-        fields.add(RealCard.createCard(CardType.SteelyResolve));
-        fields.add(RealCard.createCard(CardType.DreadOfNight));
-        fields.add(RealCard.createCard(CardType.DreadOfNight));
-        fields.add(RealCard.createCard(CardType.FungusSliver));
-        fields.add(RealCard.createCard(CardType.RotlungReanimator));
-        fields.add(RealCard.createCard(CardType.SharedTriumph));
-        fields.add(RealCard.createCard(CardType.RotlungReanimator));
-        fields.add(RealCard.createCard(CardType.SharedTriumph));
+        fields.add(RealCard.createCard(CardKind.WheelOfSunAndMoon));
+        fields.add(RealCard.createCard(CardKind.IllusoryGains));
+        fields.add(RealCard.createCard(CardKind.SteelyResolve));
+        fields.add(RealCard.createCard(CardKind.DreadOfNight));
+        fields.add(RealCard.createCard(CardKind.DreadOfNight));
+        fields.add(RealCard.createCard(CardKind.FungusSliver));
+        fields.add(RealCard.createCard(CardKind.RotlungReanimator));
+        fields.add(RealCard.createCard(CardKind.SharedTriumph));
+        fields.add(RealCard.createCard(CardKind.RotlungReanimator));
+        fields.add(RealCard.createCard(CardKind.SharedTriumph));
 
         fields.addAll(RealCard.createCards(List.of(
-                CardType.Vigor, CardType.MesmericOrb, CardType.PrismaticOmen,
-                CardType.Choke, CardType.BlazingArchon)));
+                CardKind.Vigor, CardKind.MesmericOrb, CardKind.PrismaticOmen,
+                CardKind.Choke, CardKind.BlazingArchon)));
         {
-            var c = RealCard.createCard(CardType.AncientTomb);
+            var c = RealCard.createCard(CardKind.AncientTomb);
             c.tap();
             fields.add(c);
         }
 
         return new Player(RealCard.createCards(List.of(
-                CardType.CleansingBeam,
-                CardType.CoalitionVictory,
-                CardType.SoulSnuffers
+                CardKind.CleansingBeam,
+                CardKind.CoalitionVictory,
+                CardKind.SoulSnuffers
         )),
                 RealCard.createCards(List.of(
-                        CardType.Infest
+                        CardKind.Infest
                 )),
                 fields);
     }
@@ -237,17 +248,17 @@ public class Main extends PApplet {
     private Player createBob() {
         var fields = new ArrayList<RealCard>();
         for (int i = 0; i < 29; i++) {
-            fields.add(RealCard.createCard(CardType.RotlungReanimator));
+            fields.add(RealCard.createCard(CardKind.RotlungReanimator));
         }
         for (int i = 0; i < 7; i++) {
-            fields.add(RealCard.createCard(CardType.XathridNecromancer));
+            fields.add(RealCard.createCard(CardKind.XathridNecromancer));
         }
-        fields.add(RealCard.createCard(CardType.RotlungReanimator));
-        fields.add(RealCard.createCard(CardType.RotlungReanimator));
+        fields.add(RealCard.createCard(CardKind.RotlungReanimator));
+        fields.add(RealCard.createCard(CardKind.RotlungReanimator));
         fields.addAll(RealCard.createCards(List.of(
-                CardType.WildEvocation, CardType.Recycle,
-                CardType.PrivilegedPosition, CardType.Vigor,
-                CardType.BlazingArchon
+                CardKind.WildEvocation, CardKind.Recycle,
+                CardKind.PrivilegedPosition, CardKind.Vigor,
+                CardKind.BlazingArchon
         )));
 
         return new Player(List.of(), List.of(), fields);

@@ -42,10 +42,10 @@ public class CardLoader {
         return dir;
     }
 
-    public static <I> EnumMap<CardType, CardInfo<I>> loadAllCard
-            (EnumSet<CardType> englishCardNames, String language, Function<Image, I> mapper) {
+    public static <I> EnumMap<CardKind, CardInfo<I>> loadAllCard
+            (EnumSet<CardKind> englishCardNames, String language, Function<Image, I> mapper) {
         var count = new CountDownLatch(englishCardNames.size());
-        EnumMap<CardType, CardInfo<I>> map = new EnumMap<>(CardType.class);
+        EnumMap<CardKind, CardInfo<I>> map = new EnumMap<>(CardKind.class);
 
         for (var card : englishCardNames) {
             new Thread(() -> {

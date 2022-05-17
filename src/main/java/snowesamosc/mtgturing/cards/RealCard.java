@@ -1,17 +1,24 @@
 package snowesamosc.mtgturing.cards;
 
-import snowesamosc.mtgturing.CardType;
+import snowesamosc.mtgturing.CardKind;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public abstract class RealCard{
+public abstract class RealCard {
+    private final List<CreatureType> availableCreatureTypes;
     private boolean tapped = false;
 
-    public RealCard(){
+    public RealCard() {
+        this(List.of());
     }
 
-    public static RealCard createCard(CardType type) {
+    public RealCard(List<CreatureType> initialCreatureTypes) {
+        this.availableCreatureTypes = new ArrayList<>(initialCreatureTypes);
+    }
+
+    public static RealCard createCard(CardKind type) {
         return switch (type) {
             case RotlungReanimator -> new RoutingReanimator();
             case XathridNecromancer -> new XathridNecromancer();
@@ -40,13 +47,13 @@ public abstract class RealCard{
         };
     }
 
-    public static List<RealCard> createCards(List<CardType> cardTypes){
+    public static List<RealCard> createCards(List<CardKind> cardTypes) {
         return cardTypes.stream()
                 .map(RealCard::createCard)
                 .collect(Collectors.toList());
     }
 
-    public abstract CardType getType();
+    public abstract CardKind getType();
 
     public void tap() {
         this.tapped = true;
@@ -58,5 +65,9 @@ public abstract class RealCard{
 
     public boolean isTapped() {
         return this.tapped;
+    }
+
+    public List<CreatureType> getCreatureTypes() {
+        return List.copyOf(this.availableCreatureTypes);
     }
 }
