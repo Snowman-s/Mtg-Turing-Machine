@@ -1,9 +1,12 @@
 package snowesamosc.mtgturing;
 
 import processing.core.PApplet;
+import processing.core.PFont;
 import processing.core.PImage;
+import processing.event.MouseEvent;
 import snowesamosc.mtgturing.cards.RealCard;
 
+import java.awt.geom.Rectangle2D;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -11,7 +14,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class Main extends PApplet {
     private final AtomicBoolean imageLoadEnded = new AtomicBoolean(false);
-    private EnumMap<CardType, CardLoader.CardInfo<PImage>> images = new EnumMap<>(CardType.class);
+    private EnumMap<CardType, CardLoader.CardInfo<PImage>> cardInfos = new EnumMap<>(CardType.class);
+    private RealCard selectedCard = null;
+    private PFont cardTextFont = null;
+
+    private List<CardGeometry> cardGeometries = new ArrayList<>();
 
     public static void main(String[] args) {
         PApplet.main("snowesamosc.mtgturing.Main");
@@ -25,8 +32,12 @@ public class Main extends PApplet {
     @Override
     public void setup() {
         new Thread(() -> {
-            this.images = CardLoader.loadAllCard(EnumSet.allOf(CardType.class), "Japanese", PImage::new);
+            this.cardInfos = CardLoader.loadAllCard(EnumSet.allOf(CardType.class), "Japanese", PImage::new);
             this.imageLoadEnded.set(true);
+        }).start();
+        new Thread(() -> {
+            this.cardTextFont = this.createFont("HGPｺﾞｼｯｸE 標準", 15);
+            System.out.println("Font was loaded.");
         }).start();
 
         Game.getInstance().init(
@@ -39,7 +50,7 @@ public class Main extends PApplet {
     @Override
     public void draw() {
         this.background(0);
-        if (!this.imageLoadEnded.get()) {
+        if (!this.imageLoadEnded.get() || this.cardTextFont == null) {
             this.pushStyle();
             this.noFill();
             this.stroke(255);
@@ -51,9 +62,6 @@ public class Main extends PApplet {
             return;
         }
         var game = Game.getInstance();
-        var bob = game.getBob();
-        var alice = game.getAlice();
-
         this.pushStyle();
         this.noFill();
         this.stroke(255);
@@ -66,23 +74,49 @@ public class Main extends PApplet {
         this.fill(0);
         this.stroke(255);
         this.rect(0, 0, this.getOpPanelWidth(), this.height);
+        if (this.selectedCard != null) {
+            this.pushStyle();
+            var cardInfo = this.cardInfos.get(this.selectedCard.getType());
+            this.image(cardInfo.mappedImage(),
+                    0, 0, this.getOpPanelWidth(), this.getOpPanelWidth() * this.getCardAspectRatio());
+            this.fill(255);
+            this.textFont(this.cardTextFont);
+            {
+                var name = cardInfo.cardName();
+                var text = cardInfo.cardText();
+                this.text(name, 0, this.getOpPanelWidth() * this.getCardAspectRatio() + 15);
+                this.text(text, 0, this.getOpPanelWidth() * this.getCardAspectRatio() + 30,
+                        this.getOpPanelWidth(), this.height - this.getOpPanelWidth() * this.getCardAspectRatio());
+            }
+            this.popStyle();
+        }
         this.popStyle();
 
-        final float caX = this.getOpPanelWidth(); //cardAreaX
+        this.setCardGeometries();
 
         this.pushStyle();
-        //bob
+        this.cardGeometries.forEach(i -> this.renderCard(i.card, i.geometry.x, i.geometry.y));
+        this.popStyle();
+    }
+
+    private void setCardGeometries() {
+        var game = Game.getInstance();
+        var bob = game.getBob();
+        var alice = game.getAlice();
+        this.cardGeometries = new ArrayList<>();
+        final float caX = this.getOpPanelWidth(); //cardAreaX
         {
             AtomicReference<Float> lastX = new AtomicReference<>(caX - this.getCardWidth() * 0.8F);
             AtomicReference<CardType> beforeCardType = new AtomicReference<>(null);
             bob.field().forEach(
-                card -> {
-                    var type = card.getType();
-                    var deltaX = (beforeCardType.get() == type ? this.getCardWidth() / 10F : this.getCardWidth() * 0.8F);
-                    this.renderCard(card, lastX.get() + deltaX, 0);
-                    lastX.set(lastX.get() + deltaX);
-                    beforeCardType.set(type);
-                }
+                    card -> {
+                        var type = card.getType();
+                        var deltaX = (beforeCardType.get() == type ? this.getCardWidth() / 10F : this.getCardWidth() * 0.8F);
+                        this.cardGeometries.add(new CardGeometry(card,
+                                new Rectangle2D.Float(lastX.get() + deltaX, 0, this.getCardWidth(), this.getCardHeight())));
+                        lastX.set(lastX.get() + deltaX);
+                        beforeCardType.set(type);
+                    }
             );
         }
         //Alice
@@ -90,7 +124,10 @@ public class Main extends PApplet {
             AtomicInteger handsCount = new AtomicInteger();
             alice.hands().forEach(
                     card -> {
-                        this.renderCard(card, caX + handsCount.get() * this.getCardWidth(), this.height - this.getCardHeight());
+                        this.cardGeometries.add(new CardGeometry(card,
+                                new Rectangle2D.Float(caX + handsCount.get() * this.getCardWidth(),
+                                        this.height - this.getCardHeight(),
+                                        this.getCardWidth(), this.getCardHeight())));
                         handsCount.getAndIncrement();
                     }
             );
@@ -101,19 +138,42 @@ public class Main extends PApplet {
             alice.field().stream().sorted(Comparator.comparing(RealCard::getType)).forEach(
                     card -> {
                         var type = card.getType();
-                        if(type == CardType.CloakOfInvisibility) return;
+                        if (type == CardType.CloakOfInvisibility) return;
                         var deltaX = (beforeCardType.get() == type ? this.getCardWidth() / 10F : this.getCardWidth() * 0.8F);
-                        this.renderCard(card, lastX.get() + deltaX, this.height - 2 * this.getCardHeight());
+                        this.cardGeometries.add(new CardGeometry(card,
+                                new Rectangle2D.Float(lastX.get() + deltaX, this.height - 2 * this.getCardHeight(),
+                                        this.getCardWidth(), this.getCardHeight())));
                         lastX.set(lastX.get() + deltaX);
                         beforeCardType.set(type);
                     }
             );
         }
-        this.popStyle();
+    }
+
+    @Override
+    public void mouseClicked(MouseEvent event) {
+        var cardListCopy = new ArrayList<>(this.cardGeometries);
+        Collections.reverse(cardListCopy);
+        var optional = cardListCopy.stream()
+                .filter(cardGeometry -> cardGeometry.geometry.x < this.mouseX &&
+                        this.mouseX < cardGeometry.geometry.x + cardGeometry.geometry.width &&
+                        cardGeometry.geometry.y < this.mouseY &&
+                        this.mouseY < cardGeometry.geometry.y + cardGeometry.geometry.height)
+                .findFirst()
+                .map(CardGeometry::card);
+        if (optional.isEmpty()) {
+            this.selectedCard = null;
+            return;
+        }
+        this.selectedCard = optional.get();
     }
 
     private float getCardWidth() {
-        return this.getCardHeight() / 1.396F;
+        return this.getCardHeight() / this.getCardAspectRatio();
+    }
+
+    private float getCardAspectRatio() {
+        return 1.396F;
     }
 
     private float getCardHeight() {
@@ -125,7 +185,7 @@ public class Main extends PApplet {
     }
 
     private void renderCard(RealCard card, float x, float y) {
-        this.image(this.images.get(card.getType()).mappedImage(), x, y, this.getCardWidth(), this.getCardHeight());
+        this.image(this.cardInfos.get(card.getType()).mappedImage(), x, y, this.getCardWidth(), this.getCardHeight());
     }
 
     private Player createAlice() {
@@ -180,5 +240,8 @@ public class Main extends PApplet {
         )));
 
         return new Player(List.of(), List.of(), fields);
+    }
+
+    private record CardGeometry(RealCard card, Rectangle2D.Float geometry) {
     }
 }

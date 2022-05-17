@@ -83,23 +83,26 @@ public class CardLoader {
         var saveDir = getSaveDirectory(language);
         var textDir = getCardTextSaveDirectory(language);
         Image image;
+        String name;
         String txt;
         try (InputStream in = Files.newInputStream(saveDir.resolve(englishCardName + ".png"))) {
             image = ImageIO.read(in);
             if (image == null) throw new IOException("could not read image from file");
         }
         try (BufferedReader reader = Files.newBufferedReader(textDir.resolve(englishCardName + ".txt"))) {
-            txt = reader.lines().collect(Collectors.joining());
+            var textLines = reader.lines().collect(Collectors.toList());
+            name = textLines.remove(0);
+            txt = String.join("\n", textLines);
         }
 
-        return new CardInfo<>(txt, mapper.apply(image));
+        return new CardInfo<>(txt, name, mapper.apply(image));
     }
 
     private static <I> CardInfo<I> loadCardInfoFromCardAPI(String englishCardName, String language, Function<Image, I> mapper) {
         var cards = CardAPI.getAllCards(List.of("name=" + englishCardName));
 
         var optionalCard = cards.stream().filter(c -> c.getName().equals(englishCardName)).findAny();
-        if (optionalCard.isEmpty()) return new CardInfo<>("Load Failed", mapper.apply(errorImage));
+        if (optionalCard.isEmpty()) return new CardInfo<>("Load Failed", "Load Failed", mapper.apply(errorImage));
         var card = optionalCard.get();
 
         var myLangInfo = Optional.ofNullable(card.getForeignNames())
@@ -110,6 +113,7 @@ public class CardLoader {
                 );
         var imageUrl = myLangInfo.map(ForeignData::getImageUrl).orElseGet(card::getImageUrl);
         var cardText = myLangInfo.map(ForeignData::getText).orElseGet(card::getText);
+        var cardName = myLangInfo.map(ForeignData::getName).orElseGet(card::getName);
 
         if (imageUrl == null) {
             imageUrl = getCardImageUrlCannotGetUsualWay(englishCardName, language, card.getMultiverseid());
@@ -132,6 +136,7 @@ public class CardLoader {
             }
             var textSaveDir = getCardTextSaveDirectory(language);
             try (BufferedWriter writer = Files.newBufferedWriter(textSaveDir.resolve(englishCardName + ".txt"))) {
+                writer.write(cardName + "\n");
                 writer.write(cardText);
             }
         } catch (IOException e) {
@@ -139,7 +144,7 @@ public class CardLoader {
             //一時ファイルとしての保存なので失敗しても支障はない。
         }
 
-        return new CardInfo<>(cardText, mapper.apply(image));
+        return new CardInfo<>(cardText, cardName, mapper.apply(image));
     }
 
     private static String getCardImageUrlCannotGetUsualWay(String englishCardName, String language, int multiverseId) {
@@ -156,7 +161,7 @@ public class CardLoader {
                 .getOrDefault(language, "https://gatherer.wizards.com/Handlers/Image.ashx?multiverseid=" + multiverseId + "&type=card");
     }
 
-    public static record CardInfo<I>(String cardText, I mappedImage) {
+    public static record CardInfo<I>(String cardText, String cardName, I mappedImage) {
 
     }
 }
