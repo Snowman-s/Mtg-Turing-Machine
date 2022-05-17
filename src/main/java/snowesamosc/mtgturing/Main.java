@@ -123,8 +123,13 @@ public class Main extends PApplet {
                     card -> {
                         var type = card.getType();
                         var deltaX = (beforeCardType.get() == type ? this.getCardWidth() / 10F : this.getCardWidth() * 0.8F);
-                        this.cardGeometries.add(new CardGeometry(card,
-                                new Rectangle2D.Float(lastX.get() + deltaX, 0, this.getCardWidth(), this.getCardHeight())));
+                        if (!card.isTapped()) {
+                            this.cardGeometries.add(new CardGeometry(card,
+                                    new Rectangle2D.Float(lastX.get() + deltaX, 0, this.getCardWidth(), this.getCardHeight())));
+                        } else {
+                            this.cardGeometries.add(new CardGeometry(card,
+                                    new Rectangle2D.Float(lastX.get() + deltaX, this.getCardHeight() - this.getCardWidth(), this.getCardHeight(), this.getCardWidth())));
+                        }
                         lastX.set(lastX.get() + deltaX);
                         beforeCardType.set(type);
                     }
@@ -151,9 +156,15 @@ public class Main extends PApplet {
                         var type = card.getType();
                         if (type == CardKind.CloakOfInvisibility) return;
                         var deltaX = (beforeCardType.get() == type ? this.getCardWidth() / 10F : this.getCardWidth() * 0.8F);
-                        this.cardGeometries.add(new CardGeometry(card,
-                                new Rectangle2D.Float(lastX.get() + deltaX, this.height - 2 * this.getCardHeight(),
-                                        this.getCardWidth(), this.getCardHeight())));
+                        if (!card.isTapped()) {
+                            this.cardGeometries.add(new CardGeometry(card,
+                                    new Rectangle2D.Float(lastX.get() + deltaX, this.height - 2 * this.getCardHeight(),
+                                            this.getCardWidth(), this.getCardHeight())));
+                        } else {
+                            this.cardGeometries.add(new CardGeometry(card,
+                                    new Rectangle2D.Float(lastX.get() + deltaX, this.height - this.getCardHeight() - this.getCardWidth(),
+                                            this.getCardHeight(), this.getCardWidth())));
+                        }
                         lastX.set(lastX.get() + deltaX);
                         beforeCardType.set(type);
                     }
@@ -199,7 +210,7 @@ public class Main extends PApplet {
         this.pushMatrix();
         this.translate(x, y);
         if (card.isTapped()) {
-            this.translate(this.getCardHeight(), this.getCardHeight() - this.getCardWidth());
+            this.translate(this.getCardHeight(), 0);
             this.rotate(PI / 2);
         }
         this.image(this.cardInfos.get(card.getType()).mappedImage(), 0, 0, this.getCardWidth(), this.getCardHeight());
