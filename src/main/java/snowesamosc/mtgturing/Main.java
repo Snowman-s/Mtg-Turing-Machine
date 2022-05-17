@@ -185,7 +185,14 @@ public class Main extends PApplet {
     }
 
     private void renderCard(RealCard card, float x, float y) {
-        this.image(this.cardInfos.get(card.getType()).mappedImage(), x, y, this.getCardWidth(), this.getCardHeight());
+        this.pushMatrix();
+        this.translate(x, y);
+        if (card.isTapped()) {
+            this.translate(this.getCardHeight(), this.getCardHeight() - this.getCardWidth());
+            this.rotate(PI / 2);
+        }
+        this.image(this.cardInfos.get(card.getType()).mappedImage(), 0, 0, this.getCardWidth(), this.getCardHeight());
+        this.popMatrix();
     }
 
     private Player createAlice() {
@@ -208,9 +215,13 @@ public class Main extends PApplet {
         fields.add(RealCard.createCard(CardType.SharedTriumph));
 
         fields.addAll(RealCard.createCards(List.of(
-                CardType.Vigor, CardType.MesmericOrb,
-                CardType.AncientTomb,CardType.PrismaticOmen,
-                CardType.Choke,CardType.BlazingArchon)));
+                CardType.Vigor, CardType.MesmericOrb, CardType.PrismaticOmen,
+                CardType.Choke, CardType.BlazingArchon)));
+        {
+            var c = RealCard.createCard(CardType.AncientTomb);
+            c.tap();
+            fields.add(c);
+        }
 
         return new Player(RealCard.createCards(List.of(
                 CardType.CleansingBeam,

@@ -11,17 +11,8 @@ public abstract class RealCard{
     public RealCard(){
     }
 
-    public abstract CardType getType();
-
-    public void tap() {
-        tapped = true;
-    }
-    public void untap() {
-        tapped = false;
-    }
-
-    public static RealCard createCard(CardType type){
-        return switch (type){
+    public static RealCard createCard(CardType type) {
+        return switch (type) {
             case RotlungReanimator -> new RoutingReanimator();
             case XathridNecromancer -> new XathridNecromancer();
             case CloakOfInvisibility -> new CloakOfInvisibility();
@@ -53,5 +44,19 @@ public abstract class RealCard{
         return cardTypes.stream()
                 .map(RealCard::createCard)
                 .collect(Collectors.toList());
+    }
+
+    public abstract CardType getType();
+
+    public void tap() {
+        this.tapped = true;
+    }
+
+    public void untap() {
+        this.tapped = false;
+    }
+
+    public boolean isTapped() {
+        return this.tapped;
     }
 }
