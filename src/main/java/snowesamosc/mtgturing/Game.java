@@ -1,5 +1,10 @@
 package snowesamosc.mtgturing;
 
+import snowesamosc.mtgturing.cards.RealCard;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 public class Game {
@@ -9,6 +14,8 @@ public class Game {
     private Player turnPlayer;
     private Phase phase;
     private Consumer<String> logger;
+
+    private List<Attach> attachList = new ArrayList<>();
 
     private Game() {
 
@@ -41,5 +48,21 @@ public class Game {
 
     public Phase getPhase() {
         return this.phase;
+    }
+
+    public void attach(RealCard main, RealCard sub) {
+        this.attachList.removeIf(attach -> attach.sub == sub);
+        this.attachList.add(new Attach(main, sub));
+    }
+
+    public Optional<RealCard> attachedCard(RealCard main) {
+        return this.attachList.stream().filter(attach -> attach.main() == main).findAny().map(Attach::sub);
+    }
+
+    public boolean isAttachSub(RealCard sub) {
+        return this.attachList.stream().anyMatch(attach -> attach.sub() == sub);
+    }
+
+    public static record Attach(RealCard main, RealCard sub) {
     }
 }

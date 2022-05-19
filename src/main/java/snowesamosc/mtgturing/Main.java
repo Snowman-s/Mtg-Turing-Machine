@@ -44,11 +44,16 @@ public class Main extends PApplet {
             System.out.println("Font was loaded.");
         }).start();
 
-        Game.getInstance().init(
-                this.createBob(),
-                this.createAlice(),
+        var game = Game.getInstance();
+        var attachList = new ArrayList<AttachInfo>();
+
+        game.init(
+                this.createBob(attachList),
+                this.createAlice(attachList),
                 System.out::println
         );
+
+        attachList.forEach(attach -> game.attach(attach.getMain(), attach.getSub()));
     }
 
     @Override
@@ -119,10 +124,12 @@ public class Main extends PApplet {
         {
             AtomicReference<Float> lastX = new AtomicReference<>(caX - this.getCardWidth() * 0.8F);
             AtomicReference<CardKind> beforeCardType = new AtomicReference<>(null);
-            bob.field().forEach(
+            bob.field().stream().filter(card -> !game.isAttachSub(card)).sorted(Comparator.comparing(RealCard::getType)).forEach(
                     card -> {
                         var type = card.getType();
                         var deltaX = (beforeCardType.get() == type ? this.getCardWidth() / 10F : this.getCardWidth() * 0.8F);
+                        game.attachedCard(card).ifPresent(sub -> this.cardGeometries.add(new CardGeometry(sub,
+                                new Rectangle2D.Float(lastX.get() + deltaX, this.getCardHeight() / 10F, this.getCardWidth(), this.getCardHeight()))));
                         if (!card.isTapped()) {
                             this.cardGeometries.add(new CardGeometry(card,
                                     new Rectangle2D.Float(lastX.get() + deltaX, 0, this.getCardWidth(), this.getCardHeight())));
@@ -151,11 +158,12 @@ public class Main extends PApplet {
         {
             AtomicReference<Float> lastX = new AtomicReference<>(caX - this.getCardWidth() * 0.8F);
             AtomicReference<CardKind> beforeCardType = new AtomicReference<>(null);
-            alice.field().stream().sorted(Comparator.comparing(RealCard::getType)).forEach(
+            alice.field().stream().filter(card -> !game.isAttachSub(card)).sorted(Comparator.comparing(RealCard::getType)).forEach(
                     card -> {
                         var type = card.getType();
-                        if (type == CardKind.CloakOfInvisibility) return;
                         var deltaX = (beforeCardType.get() == type ? this.getCardWidth() / 10F : this.getCardWidth() * 0.8F);
+                        game.attachedCard(card).ifPresent(sub -> this.cardGeometries.add(new CardGeometry(sub,
+                                new Rectangle2D.Float(lastX.get() + deltaX - this.getCardWidth() / 20F, this.height - 2 * this.getCardHeight() - this.getCardHeight() / 10F, this.getCardWidth(), this.getCardHeight()))));
                         if (!card.isTapped()) {
                             this.cardGeometries.add(new CardGeometry(card,
                                     new Rectangle2D.Float(lastX.get() + deltaX, this.height - 2 * this.getCardHeight(),
@@ -217,14 +225,13 @@ public class Main extends PApplet {
         this.popMatrix();
     }
 
-    private Player createAlice() {
+    private Player createAlice(List<AttachInfo> attachList) {
         var fields = new ArrayList<RealCard>();
-        for (int i = 0; i < 29; i++) {
-            fields.add(RealCard.createCard(CardKind.CloakOfInvisibility));
-        }
-        for (int i = 0; i < 7; i++) {
-            fields.add(RealCard.createCard(CardKind.CloakOfInvisibility));
-        }
+        attachList.forEach(attach -> {
+            var card = RealCard.createCard(CardKind.CloakOfInvisibility);
+            attach.setSub(card);
+            fields.add(card);
+        });
         fields.add(RealCard.createCard(CardKind.WheelOfSunAndMoon));
         fields.add(RealCard.createCard(CardKind.IllusoryGains));
         fields.add(RealCard.createCard(CardKind.SteelyResolve));
@@ -256,13 +263,17 @@ public class Main extends PApplet {
                 fields);
     }
 
-    private Player createBob() {
+    private Player createBob(List<AttachInfo> attachRequire) {
         var fields = new ArrayList<RealCard>();
         for (int i = 0; i < 29; i++) {
-            fields.add(RealCard.createCard(CardKind.RotlungReanimator));
+            var c = RealCard.createCard(CardKind.RotlungReanimator);
+            attachRequire.add(new AttachInfo(c));
+            fields.add(c);
         }
         for (int i = 0; i < 7; i++) {
-            fields.add(RealCard.createCard(CardKind.XathridNecromancer));
+            var c = RealCard.createCard(CardKind.XathridNecromancer);
+            attachRequire.add(new AttachInfo(c));
+            fields.add(c);
         }
         fields.add(RealCard.createCard(CardKind.RotlungReanimator));
         fields.add(RealCard.createCard(CardKind.RotlungReanimator));
@@ -276,5 +287,26 @@ public class Main extends PApplet {
     }
 
     private record CardGeometry(RealCard card, Rectangle2D.Float geometry) {
+    }
+
+    private static class AttachInfo {
+        private final RealCard main;
+        private RealCard sub;
+
+        public AttachInfo(RealCard main) {
+            this.main = main;
+        }
+
+        public RealCard getMain() {
+            return this.main;
+        }
+
+        public RealCard getSub() {
+            return this.sub;
+        }
+
+        public void setSub(RealCard sub) {
+            this.sub = sub;
+        }
     }
 }
