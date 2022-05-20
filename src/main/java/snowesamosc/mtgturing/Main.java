@@ -8,16 +8,18 @@ import snowesamosc.mtgturing.cards.*;
 
 import java.awt.geom.Rectangle2D;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class Main extends PApplet {
-    private final AtomicBoolean imageLoadEnded = new AtomicBoolean(false);
+    private final AtomicBoolean loadEnded = new AtomicBoolean(false);
     private EnumMap<CardKind, CardLoader.CardInfo<PImage>> cardInfos = new EnumMap<>(CardKind.class);
     private RealCard selectedCard = null;
     private PFont cardTextFont = null;
+    private List<ControllerLoader.Table2Element> controllerInfo = null;
 
     private List<CardGeometry> cardGeometries = new ArrayList<>();
 
@@ -36,30 +38,50 @@ public class Main extends PApplet {
         var prop = Property.getInstance();
 
         new Thread(() -> {
-            this.cardInfos = CardLoader.loadAllCard(EnumSet.allOf(CardKind.class), prop.getLanguage(), PImage::new);
-            this.imageLoadEnded.set(true);
+            var count = new CountDownLatch(3);
+            new Thread(() -> {
+                this.cardInfos = CardLoader.loadAllCard(EnumSet.allOf(CardKind.class), prop.getLanguage(), PImage::new);
+                count.countDown();
+            }).start();
+            new Thread(() -> {
+                this.cardTextFont = this.createFont("HGPｺﾞｼｯｸE 標準", 15);
+                System.out.println("Font was loaded.");
+                count.countDown();
+            }).start();
+            new Thread(() -> {
+                this.controllerInfo = ControllerLoader.loadTable2();
+                System.out.println("Controller data was loaded.");
+                count.countDown();
+            }).start();
+
+            try {
+                count.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                System.exit(-1);
+            }
+
+            var game = Game.getInstance();
+            var attachList = new ArrayList<AttachInfo>();
+
+            game.init(
+                    this.createBob(attachList),
+                    this.createAlice(attachList),
+                    System.out::println
+            );
+
+            attachList.forEach(attach -> game.attach(attach.getMain(), attach.getSub()));
+
+            System.out.println("Game was initialized.");
+
+            this.loadEnded.set(true);
         }).start();
-        new Thread(() -> {
-            this.cardTextFont = this.createFont("HGPｺﾞｼｯｸE 標準", 15);
-            System.out.println("Font was loaded.");
-        }).start();
-
-        var game = Game.getInstance();
-        var attachList = new ArrayList<AttachInfo>();
-
-        game.init(
-                this.createBob(attachList),
-                this.createAlice(attachList),
-                System.out::println
-        );
-
-        attachList.forEach(attach -> game.attach(attach.getMain(), attach.getSub()));
     }
 
     @Override
     public void draw() {
         this.background(0);
-        if (!this.imageLoadEnded.get() || this.cardTextFont == null) {
+        if (!this.loadEnded.get()) {
             this.pushStyle();
             this.noFill();
             this.stroke(255);
@@ -255,6 +277,7 @@ public class Main extends PApplet {
         attachList.forEach(attach -> {
             var card = RealCard.createCard(CardKind.CloakOfInvisibility);
             attach.setSub(card);
+            card.setPhaseIn(attach.getMain().isPhaseIn());
             fields.add(card);
         });
         fields.add(RealCard.createCard(CardKind.WheelOfSunAndMoon));
@@ -325,47 +348,44 @@ public class Main extends PApplet {
 
     private Player createBob(List<AttachInfo> attachRequire) {
         var fields = new ArrayList<RealCard>();
-        record Table2Element(CardKind kind, CreatureType dieType, CardColor createColor, CreatureType createType) {
-        }
-        List<Table2Element> table2 = List.of(
-                new Table2Element(CardKind.RotlungReanimator, CreatureType.Aetherborn, CardColor.White, CreatureType.Sliver),
-                new Table2Element(CardKind.RotlungReanimator, CreatureType.Basilisk, CardColor.Green, CreatureType.Elf),
-                new Table2Element(CardKind.RotlungReanimator, CreatureType.Cephalid, CardColor.White, CreatureType.Sliver),
-                new Table2Element(CardKind.RotlungReanimator, CreatureType.Demon, CardColor.Green, CreatureType.Aetherborn),
-                new Table2Element(CardKind.RotlungReanimator, CreatureType.Elf, CardColor.White, CreatureType.Demon),
-                new Table2Element(CardKind.RotlungReanimator, CreatureType.Faerie, CardColor.Green, CreatureType.Harpy),
-                new Table2Element(CardKind.RotlungReanimator, CreatureType.Giant, CardColor.Green, CreatureType.Juggernaut),
-                new Table2Element(CardKind.RotlungReanimator, CreatureType.Harpy, CardColor.White, CreatureType.Faerie),
-                new Table2Element(CardKind.RotlungReanimator, CreatureType.Illusion, CardColor.Green, CreatureType.Faerie),
-                new Table2Element(CardKind.RotlungReanimator, CreatureType.Juggernaut, CardColor.White, CreatureType.Illusion),
-                new Table2Element(CardKind.XathridNecromancer, CreatureType.Kavu, CardColor.White, CreatureType.Leviathan),
-                new Table2Element(CardKind.XathridNecromancer, CreatureType.Leviathan, CardColor.White, CreatureType.Illusion),
-                new Table2Element(CardKind.XathridNecromancer, CreatureType.Myr, CardColor.White, CreatureType.Basilisk),
-                new Table2Element(CardKind.RotlungReanimator, CreatureType.Noggle, CardColor.Green, CreatureType.Orc),
-                new Table2Element(CardKind.RotlungReanimator, CreatureType.Orc, CardColor.White, CreatureType.Pegasus),
-                new Table2Element(CardKind.XathridNecromancer, CreatureType.Pegasus, CardColor.Green, CreatureType.Rhino),
-                new Table2Element(CardKind.RotlungReanimator, CreatureType.Rhino, CardColor.Blue, CreatureType.Assassin),
-                new Table2Element(CardKind.RotlungReanimator, CreatureType.Sliver, CardColor.Green, CreatureType.Cephalid)
-        );
 
-        table2.forEach(element -> {
-            var card = RealCard.createCard(element.kind);
+        this.controllerInfo.forEach(element -> {
+            var card = RealCard.createCard(element.kind());
             attachRequire.add(new AttachInfo(card));
             card.asThatCard(XathridNecromancer.class, c -> {
                 c.setDieType(element.dieType());
                 c.setCreateColor(element.createColor());
                 c.setCreateType(element.createType());
+                c.setPhaseIn(element.phaseIn());
             });
             card.asThatCard(RoutingReanimator.class, c -> {
                 c.setDieType(element.dieType());
                 c.setCreateColor(element.createColor());
                 c.setCreateType(element.createType());
+                c.setPhaseIn(element.phaseIn());
             });
             fields.add(card);
         });
 
-        fields.add(RealCard.createCard(CardKind.RotlungReanimator));
-        fields.add(RealCard.createCard(CardKind.RotlungReanimator));
+        {
+            RealCard card = RealCard.createCard(CardKind.RotlungReanimator);
+            card.asThatCard(RoutingReanimator.class, c -> {
+                c.setDieType(CreatureType.Lhurgoyf);
+                c.setCreateColor(CardColor.Green);
+                c.setCreateType(CreatureType.Lhurgoyf);
+            });
+            fields.add(card);
+        }
+        {
+            RealCard card = RealCard.createCard(CardKind.RotlungReanimator);
+            card.asThatCard(RoutingReanimator.class, c -> {
+                c.setDieType(CreatureType.Rat);
+                c.setCreateColor(CardColor.White);
+                c.setCreateType(CreatureType.Rat);
+            });
+            fields.add(card);
+        }
+
         fields.addAll(RealCard.createCards(List.of(
                 CardKind.WildEvocation, CardKind.Recycle,
                 CardKind.PrivilegedPosition, CardKind.Vigor,

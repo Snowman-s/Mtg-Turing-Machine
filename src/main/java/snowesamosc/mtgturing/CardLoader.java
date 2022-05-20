@@ -25,7 +25,7 @@ public class CardLoader {
     }
 
     private static Path getSaveDirectory(String lang) throws IOException {
-        var dir = Path.of("./cards/" + lang);
+        var dir = Path.of("./data/cards/" + lang);
         if (!Files.exists(dir)) {
             Files.createDirectories(dir);
         }
