@@ -6,6 +6,7 @@ import snowesamosc.mtgturing.CardKind;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -99,5 +100,9 @@ public abstract class RealCard {
 
     public List<Pair<CardColor, CardColor>> getReplaceColors() {
         return Collections.emptyList();
+    }
+
+    public Optional<CreatureType> getSelectedType() {
+        return Optional.empty();
     }
 }

@@ -143,6 +143,12 @@ public class Main extends PApplet {
                                     offsetY.set(offsetY.get() + 15);
                                 }
                         );
+                this.selectedCard.getSelectedType().ifPresent(
+                        type -> {
+                            this.text("★" + Property.getInstance().translate(type), 0, offsetY.get());
+                            offsetY.set(offsetY.get() + 15);
+                        }
+                );
 
                 this.textSize(15);
                 this.text(text, 0, offsetY.get(), this.getOpPanelWidth(), this.height - offsetY.get());
