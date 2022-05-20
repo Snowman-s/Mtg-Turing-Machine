@@ -242,7 +242,11 @@ public class Main extends PApplet {
             this.translate(this.getCardHeight(), 0);
             this.rotate(PI / 2);
         }
+        if (!card.isPhaseIn()) {
+            this.tint(100, 100, 100);
+        }
         this.image(this.cardInfos.get(card.getType()).mappedImage(), 0, 0, this.getCardWidth(), this.getCardHeight());
+        this.noTint();
         this.popMatrix();
     }
 

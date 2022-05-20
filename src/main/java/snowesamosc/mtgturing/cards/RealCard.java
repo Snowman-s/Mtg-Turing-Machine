@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 public abstract class RealCard {
     private final List<CreatureType> availableCreatureTypes;
     private boolean tapped = false;
+    private boolean phaseIn = true;
 
     public RealCard() {
         this(List.of());
@@ -68,6 +69,18 @@ public abstract class RealCard {
 
     public boolean isTapped() {
         return this.tapped;
+    }
+
+    public void reversePhasing() {
+        this.phaseIn = !this.phaseIn;
+    }
+
+    public boolean isPhaseIn() {
+        return this.phaseIn;
+    }
+
+    public void setPhaseIn(boolean phaseIn) {
+        this.phaseIn = phaseIn;
     }
 
     public List<CreatureType> getCreatureTypes() {
