@@ -57,7 +57,7 @@ public class CardLoader {
         try {
             count.await();
         } catch (InterruptedException e) {
-            System.err.println("カード情報のロードに失敗しました。プログラムを終了します。");
+            System.err.println("Failed to load card information. Terminate the program.");
             System.exit(-1);
         }
 
