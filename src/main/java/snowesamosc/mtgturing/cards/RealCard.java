@@ -1,9 +1,12 @@
 package snowesamosc.mtgturing.cards;
 
+import kotlin.Pair;
 import snowesamosc.mtgturing.CardKind;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public abstract class RealCard {
@@ -69,5 +72,19 @@ public abstract class RealCard {
 
     public List<CreatureType> getCreatureTypes() {
         return List.copyOf(this.availableCreatureTypes);
+    }
+
+    public <T extends RealCard> void asThatCard(Class<T> to, Consumer<T> consumer) {
+        if (this.getClass().isAssignableFrom(to)) {
+            consumer.accept(to.cast(this));
+        }
+    }
+
+    public List<Pair<CreatureType, CreatureType>> getReplaceTypes() {
+        return Collections.emptyList();
+    }
+
+    public List<Pair<CardColor, CardColor>> getReplaceColors() {
+        return Collections.emptyList();
     }
 }

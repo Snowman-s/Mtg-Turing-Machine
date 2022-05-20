@@ -1,5 +1,6 @@
 package snowesamosc.mtgturing;
 
+import snowesamosc.mtgturing.cards.CardColor;
 import snowesamosc.mtgturing.cards.CreatureType;
 
 public class Property {
@@ -20,6 +21,19 @@ public class Property {
 
     public void setLanguage(String language) {
         this.language = language;
+    }
+
+    public String translate(CardColor color) {
+        return switch (this.language) {
+            case "Japanese" -> switch (color) {
+                case Black -> "黒";
+                case White -> "白";
+                case Red -> "赤";
+                case Blue -> "青";
+                case Green -> "緑";
+            };
+            default -> color.name();
+        };
     }
 
     public String translate(CreatureType type) {
@@ -48,6 +62,9 @@ public class Property {
                 case Lhurgoyf -> "ルアゴイフ";
                 case Incarnation -> "インカーネーション";
                 case AssemblyWorker -> "組立作業員";
+                case Cleric -> "クレリック";
+                case Zombie -> "ゾンビ";
+                case Human -> "人間";
             };
             default -> type.name();
         };

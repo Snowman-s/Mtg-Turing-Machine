@@ -4,7 +4,7 @@ import processing.core.PApplet;
 import processing.core.PFont;
 import processing.core.PImage;
 import processing.event.MouseEvent;
-import snowesamosc.mtgturing.cards.RealCard;
+import snowesamosc.mtgturing.cards.*;
 
 import java.awt.geom.Rectangle2D;
 import java.util.*;
@@ -93,16 +93,37 @@ public class Main extends PApplet {
             {
                 var name = cardInfo.cardName();
                 var text = cardInfo.cardText();
-                var offsetY = this.getOpPanelWidth() * this.getCardAspectRatio() + 15;
-                this.text(name, 0, offsetY);
-                offsetY += 15;
+                var offsetY = new AtomicReference<>(this.getOpPanelWidth() * this.getCardAspectRatio() + 15);
+                this.text(name, 0, offsetY.get());
+                offsetY.set(offsetY.get() + 15);
                 if (!this.selectedCard.getCreatureTypes().isEmpty()) {
                     this.text(this.selectedCard.getCreatureTypes().stream()
                             .map(type -> Property.getInstance().translate(type))
-                            .collect(Collectors.joining(" ")), 0, offsetY);
-                    offsetY += 15;
+                            .collect(Collectors.joining(" ")), 0, offsetY.get());
+                    offsetY.set(offsetY.get() + 15);
                 }
-                this.text(text, 0, offsetY, this.getOpPanelWidth(), this.height - offsetY);
+                this.textSize(13);
+                this.selectedCard.getReplaceColors().stream()
+                        .map(replaceColor -> "(" + Property.getInstance().translate(replaceColor.component1()) +
+                                " → " + Property.getInstance().translate(replaceColor.component2()) + ")")
+                        .forEach(
+                                t -> {
+                                    this.text(t, 0, offsetY.get());
+                                    offsetY.set(offsetY.get() + 15);
+                                }
+                        );
+                this.selectedCard.getReplaceTypes().stream()
+                        .map(replaceType -> "(" + Property.getInstance().translate(replaceType.component1()) +
+                                " → " + Property.getInstance().translate(replaceType.component2()) + ")")
+                        .forEach(
+                                t -> {
+                                    this.text(t, 0, offsetY.get());
+                                    offsetY.set(offsetY.get() + 15);
+                                }
+                        );
+
+                this.textSize(15);
+                this.text(text, 0, offsetY.get(), this.getOpPanelWidth(), this.height - offsetY.get());
             }
             this.popStyle();
         }
@@ -234,14 +255,49 @@ public class Main extends PApplet {
         });
         fields.add(RealCard.createCard(CardKind.WheelOfSunAndMoon));
         fields.add(RealCard.createCard(CardKind.IllusoryGains));
-        fields.add(RealCard.createCard(CardKind.SteelyResolve));
-        fields.add(RealCard.createCard(CardKind.DreadOfNight));
-        fields.add(RealCard.createCard(CardKind.DreadOfNight));
-        fields.add(RealCard.createCard(CardKind.FungusSliver));
-        fields.add(RealCard.createCard(CardKind.RotlungReanimator));
-        fields.add(RealCard.createCard(CardKind.SharedTriumph));
-        fields.add(RealCard.createCard(CardKind.RotlungReanimator));
-        fields.add(RealCard.createCard(CardKind.SharedTriumph));
+        {
+            RealCard card = RealCard.createCard(CardKind.SteelyResolve);
+            card.asThatCard(SteelyResolve.class, c -> c.setSelectedType(CreatureType.AssemblyWorker));
+            fields.add(card);
+        }
+        for (int i = 0; i < 2; i++) {
+            RealCard card = RealCard.createCard(CardKind.DreadOfNight);
+            card.asThatCard(DreadOfNight.class, c -> c.setMinusColor(CardColor.Black));
+            fields.add(card);
+        }
+        {
+            RealCard card = RealCard.createCard(CardKind.FungusSliver);
+            card.asThatCard(FungusSliver.class, c -> c.setPlusType(CreatureType.Incarnation));
+            fields.add(card);
+        }
+        {
+            RealCard card = RealCard.createCard(CardKind.RotlungReanimator);
+            card.asThatCard(RoutingReanimator.class, c -> {
+                c.setDieType(CreatureType.Lhurgoyf);
+                c.setCreateColor(CardColor.Black);
+                c.setCreateType(CreatureType.Cephalid);
+            });
+            fields.add(card);
+        }
+        {
+            RealCard card = RealCard.createCard(CardKind.SharedTriumph);
+            card.asThatCard(SharedTriumph.class, c -> c.setSelectedType(CreatureType.Lhurgoyf));
+            fields.add(card);
+        }
+        {
+            RealCard card = RealCard.createCard(CardKind.RotlungReanimator);
+            card.asThatCard(RoutingReanimator.class, c -> {
+                c.setDieType(CreatureType.Rat);
+                c.setCreateColor(CardColor.Black);
+                c.setCreateType(CreatureType.Cephalid);
+            });
+            fields.add(card);
+        }
+        {
+            RealCard card = RealCard.createCard(CardKind.SharedTriumph);
+            card.asThatCard(SharedTriumph.class, c -> c.setSelectedType(CreatureType.Rat));
+            fields.add(card);
+        }
 
         fields.addAll(RealCard.createCards(List.of(
                 CardKind.Vigor, CardKind.MesmericOrb, CardKind.PrismaticOmen,
@@ -265,16 +321,45 @@ public class Main extends PApplet {
 
     private Player createBob(List<AttachInfo> attachRequire) {
         var fields = new ArrayList<RealCard>();
-        for (int i = 0; i < 29; i++) {
-            var c = RealCard.createCard(CardKind.RotlungReanimator);
-            attachRequire.add(new AttachInfo(c));
-            fields.add(c);
+        record Table2Element(CardKind kind, CreatureType dieType, CardColor createColor, CreatureType createType) {
         }
-        for (int i = 0; i < 7; i++) {
-            var c = RealCard.createCard(CardKind.XathridNecromancer);
-            attachRequire.add(new AttachInfo(c));
-            fields.add(c);
-        }
+        List<Table2Element> table2 = List.of(
+                new Table2Element(CardKind.RotlungReanimator, CreatureType.Aetherborn, CardColor.White, CreatureType.Sliver),
+                new Table2Element(CardKind.RotlungReanimator, CreatureType.Basilisk, CardColor.Green, CreatureType.Elf),
+                new Table2Element(CardKind.RotlungReanimator, CreatureType.Cephalid, CardColor.White, CreatureType.Sliver),
+                new Table2Element(CardKind.RotlungReanimator, CreatureType.Demon, CardColor.Green, CreatureType.Aetherborn),
+                new Table2Element(CardKind.RotlungReanimator, CreatureType.Elf, CardColor.White, CreatureType.Demon),
+                new Table2Element(CardKind.RotlungReanimator, CreatureType.Faerie, CardColor.Green, CreatureType.Harpy),
+                new Table2Element(CardKind.RotlungReanimator, CreatureType.Giant, CardColor.Green, CreatureType.Juggernaut),
+                new Table2Element(CardKind.RotlungReanimator, CreatureType.Harpy, CardColor.White, CreatureType.Faerie),
+                new Table2Element(CardKind.RotlungReanimator, CreatureType.Illusion, CardColor.Green, CreatureType.Faerie),
+                new Table2Element(CardKind.RotlungReanimator, CreatureType.Juggernaut, CardColor.White, CreatureType.Illusion),
+                new Table2Element(CardKind.XathridNecromancer, CreatureType.Kavu, CardColor.White, CreatureType.Leviathan),
+                new Table2Element(CardKind.XathridNecromancer, CreatureType.Leviathan, CardColor.White, CreatureType.Illusion),
+                new Table2Element(CardKind.XathridNecromancer, CreatureType.Myr, CardColor.White, CreatureType.Basilisk),
+                new Table2Element(CardKind.RotlungReanimator, CreatureType.Noggle, CardColor.Green, CreatureType.Orc),
+                new Table2Element(CardKind.RotlungReanimator, CreatureType.Orc, CardColor.White, CreatureType.Pegasus),
+                new Table2Element(CardKind.XathridNecromancer, CreatureType.Pegasus, CardColor.Green, CreatureType.Rhino),
+                new Table2Element(CardKind.RotlungReanimator, CreatureType.Rhino, CardColor.Blue, CreatureType.Assassin),
+                new Table2Element(CardKind.RotlungReanimator, CreatureType.Sliver, CardColor.Green, CreatureType.Cephalid)
+        );
+
+        table2.forEach(element -> {
+            var card = RealCard.createCard(element.kind);
+            attachRequire.add(new AttachInfo(card));
+            card.asThatCard(XathridNecromancer.class, c -> {
+                c.setDieType(element.dieType());
+                c.setCreateColor(element.createColor());
+                c.setCreateType(element.createType());
+            });
+            card.asThatCard(RoutingReanimator.class, c -> {
+                c.setDieType(element.dieType());
+                c.setCreateColor(element.createColor());
+                c.setCreateType(element.createType());
+            });
+            fields.add(card);
+        });
+
         fields.add(RealCard.createCard(CardKind.RotlungReanimator));
         fields.add(RealCard.createCard(CardKind.RotlungReanimator));
         fields.addAll(RealCard.createCards(List.of(
