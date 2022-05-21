@@ -60,6 +60,10 @@ public abstract class RealCard {
 
     public abstract CardKind getType();
 
+    public boolean isToken() {
+        return false;
+    }
+
     public void tap() {
         this.tapped = true;
     }

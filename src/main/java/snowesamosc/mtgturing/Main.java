@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 public class Main extends PApplet {
     private final AtomicBoolean loadEnded = new AtomicBoolean(false);
     private EnumMap<CardKind, CardLoader.CardInfo<PImage>> cardInfos = new EnumMap<>(CardKind.class);
+    private PImage tokenImage = null;
     private RealCard selectedCard = null;
     private PFont cardTextFont = null;
     private List<ControllerLoader.Table2Element> controllerInfo = null;
@@ -38,9 +39,13 @@ public class Main extends PApplet {
         var prop = Property.getInstance();
 
         new Thread(() -> {
-            var count = new CountDownLatch(3);
+            var count = new CountDownLatch(4);
             new Thread(() -> {
                 this.cardInfos = CardLoader.loadAllCard(EnumSet.allOf(CardKind.class), prop.getLanguage(), PImage::new);
+                count.countDown();
+            }).start();
+            new Thread(() -> {
+                this.tokenImage = TokenLoader.loadTokenImage(PImage::new);
                 count.countDown();
             }).start();
             new Thread(() -> {
@@ -107,14 +112,27 @@ public class Main extends PApplet {
         this.rect(0, 0, this.getOpPanelWidth(), this.height);
         if (this.selectedCard != null) {
             this.pushStyle();
-            var cardInfo = this.cardInfos.get(this.selectedCard.getType());
-            this.image(cardInfo.mappedImage(),
+
+            PImage image;
+            String name, text;
+            {
+                if (this.selectedCard.isToken()) {
+                    image = this.tokenImage;
+                    name = "Token";
+                    text = "";
+                } else {
+                    var cardInfo = this.cardInfos.get(this.selectedCard.getType());
+                    image = cardInfo.mappedImage();
+                    name = cardInfo.cardName();
+                    text = cardInfo.cardText();
+                }
+            }
+
+            this.image(image,
                     0, 0, this.getOpPanelWidth(), this.getOpPanelWidth() * this.getCardAspectRatio());
             this.fill(255);
             this.textFont(this.cardTextFont);
             {
-                var name = cardInfo.cardName();
-                var text = cardInfo.cardText();
                 var offsetY = new AtomicReference<>(this.getOpPanelWidth() * this.getCardAspectRatio() + 15);
                 this.text(name, 0, offsetY.get());
                 offsetY.set(offsetY.get() + 15);
@@ -168,28 +186,42 @@ public class Main extends PApplet {
         var game = Game.getInstance();
         var bob = game.getBob();
         var alice = game.getAlice();
+
+        Comparator<RealCard> comparator = (a, b) ->
+                Comparator.nullsLast(Comparator.comparing((CardKind t) -> t))
+                        .compare(a.getType(), b.getType());
+
         this.cardGeometries = new ArrayList<>();
         final float caX = this.getOpPanelWidth(); //cardAreaX
         {
-            AtomicReference<Float> lastX = new AtomicReference<>(caX - this.getCardWidth() * 0.8F);
+            AtomicReference<Float> lastNormalX = new AtomicReference<>(caX - this.getCardWidth() * 0.8F);
+            AtomicReference<Float> lastTokenX = new AtomicReference<>(caX - this.getCardWidth() / 10F);
             AtomicReference<CardKind> beforeCardType = new AtomicReference<>(null);
-            bob.field().stream().filter(card -> !game.isAttachSub(card)).sorted(Comparator.comparing(RealCard::getType)).forEach(
-                    card -> {
-                        var type = card.getType();
-                        var deltaX = (beforeCardType.get() == type ? this.getCardWidth() / 10F : this.getCardWidth() * 0.8F);
-                        game.attachedCard(card).ifPresent(sub -> this.cardGeometries.add(new CardGeometry(sub,
-                                new Rectangle2D.Float(lastX.get() + deltaX, this.getCardHeight() / 10F, this.getCardWidth(), this.getCardHeight()))));
-                        if (!card.isTapped()) {
-                            this.cardGeometries.add(new CardGeometry(card,
-                                    new Rectangle2D.Float(lastX.get() + deltaX, 0, this.getCardWidth(), this.getCardHeight())));
-                        } else {
-                            this.cardGeometries.add(new CardGeometry(card,
-                                    new Rectangle2D.Float(lastX.get() + deltaX, this.getCardHeight() - this.getCardWidth(), this.getCardHeight(), this.getCardWidth())));
-                        }
-                        lastX.set(lastX.get() + deltaX);
-                        beforeCardType.set(type);
-                    }
-            );
+            bob.field().stream()
+                    .filter(card -> !game.isAttachSub(card))
+                    .sorted(comparator)
+                    .forEach(
+                            card -> {
+                                var type = card.getType();
+                                var deltaX = card.isToken() ?
+                                        this.getCardWidth() / 10F :
+                                        (beforeCardType.get() == type ? this.getCardWidth() / 10F : this.getCardWidth() * 0.8F);
+                                var renderX = card.isToken() ?
+                                        lastTokenX.updateAndGet(x -> x + deltaX) :
+                                        lastNormalX.updateAndGet(x -> x + deltaX);
+                                var renderY = card.isToken() ? this.height / 5F : 0;
+                                game.attachedCard(card).ifPresent(sub -> this.cardGeometries.add(new CardGeometry(sub,
+                                        new Rectangle2D.Float(renderX, renderY + this.getCardHeight() / 10F, this.getCardWidth(), this.getCardHeight()))));
+                                if (!card.isTapped()) {
+                                    this.cardGeometries.add(new CardGeometry(card,
+                                            new Rectangle2D.Float(renderX, renderY, this.getCardWidth(), this.getCardHeight())));
+                                } else {
+                                    this.cardGeometries.add(new CardGeometry(card,
+                                            new Rectangle2D.Float(renderX, renderY + this.getCardHeight() - this.getCardWidth(), this.getCardHeight(), this.getCardWidth())));
+                                }
+                                if (!card.isToken()) beforeCardType.set(type);
+                            }
+                    );
         }
         //Alice
         {
@@ -198,34 +230,41 @@ public class Main extends PApplet {
                     card -> {
                         this.cardGeometries.add(new CardGeometry(card,
                                 new Rectangle2D.Float(caX + handsCount.get() * this.getCardWidth(),
-                                        this.height - this.getCardHeight(),
+                                        this.height * 4 / 5F,
                                         this.getCardWidth(), this.getCardHeight())));
                         handsCount.getAndIncrement();
                     }
             );
         }
         {
-            AtomicReference<Float> lastX = new AtomicReference<>(caX - this.getCardWidth() * 0.8F);
+            AtomicReference<Float> lastNormalX = new AtomicReference<>(caX - this.getCardWidth() * 0.8F);
+            AtomicReference<Float> lastTokenX = new AtomicReference<>(caX - this.getCardWidth() / 10F);
             AtomicReference<CardKind> beforeCardType = new AtomicReference<>(null);
-            alice.field().stream().filter(card -> !game.isAttachSub(card)).sorted(Comparator.comparing(RealCard::getType)).forEach(
-                    card -> {
-                        var type = card.getType();
-                        var deltaX = (beforeCardType.get() == type ? this.getCardWidth() / 10F : this.getCardWidth() * 0.8F);
-                        game.attachedCard(card).ifPresent(sub -> this.cardGeometries.add(new CardGeometry(sub,
-                                new Rectangle2D.Float(lastX.get() + deltaX - this.getCardWidth() / 20F, this.height - 2 * this.getCardHeight() - this.getCardHeight() / 10F, this.getCardWidth(), this.getCardHeight()))));
-                        if (!card.isTapped()) {
-                            this.cardGeometries.add(new CardGeometry(card,
-                                    new Rectangle2D.Float(lastX.get() + deltaX, this.height - 2 * this.getCardHeight(),
-                                            this.getCardWidth(), this.getCardHeight())));
-                        } else {
-                            this.cardGeometries.add(new CardGeometry(card,
-                                    new Rectangle2D.Float(lastX.get() + deltaX, this.height - this.getCardHeight() - this.getCardWidth(),
-                                            this.getCardHeight(), this.getCardWidth())));
-                        }
-                        lastX.set(lastX.get() + deltaX);
-                        beforeCardType.set(type);
-                    }
-            );
+            alice.field().stream()
+                    .filter(card -> !game.isAttachSub(card))
+                    .sorted(comparator)
+                    .forEach(
+                            card -> {
+                                var type = card.getType();
+                                var deltaX = card.isToken() ?
+                                        this.getCardWidth() / 10F :
+                                        (beforeCardType.get() == type ? this.getCardWidth() / 10F : this.getCardWidth() * 0.8F);
+                                var renderX = card.isToken() ?
+                                        lastTokenX.updateAndGet(x -> x + deltaX) :
+                                        lastNormalX.updateAndGet(x -> x + deltaX);
+                                var renderY = card.isToken() ? this.height * 2 / 5 : this.height * 3 / 5;
+                                game.attachedCard(card).ifPresent(sub -> this.cardGeometries.add(new CardGeometry(sub,
+                                        new Rectangle2D.Float(renderX, renderY + this.getCardHeight() / 10F, this.getCardWidth(), this.getCardHeight()))));
+                                if (!card.isTapped()) {
+                                    this.cardGeometries.add(new CardGeometry(card,
+                                            new Rectangle2D.Float(renderX, renderY, this.getCardWidth(), this.getCardHeight())));
+                                } else {
+                                    this.cardGeometries.add(new CardGeometry(card,
+                                            new Rectangle2D.Float(renderX, renderY + this.getCardHeight() - this.getCardWidth(), this.getCardHeight(), this.getCardWidth())));
+                                }
+                                if (!card.isToken()) beforeCardType.set(type);
+                            }
+                    );
         }
     }
 
@@ -256,7 +295,7 @@ public class Main extends PApplet {
     }
 
     private float getCardHeight() {
-        return this.height / 5F;
+        return this.height / 5F * 0.9F;
     }
 
     private float getOpPanelWidth() {
@@ -273,7 +312,8 @@ public class Main extends PApplet {
         if (!card.isPhaseIn()) {
             this.tint(100, 100, 100);
         }
-        this.image(this.cardInfos.get(card.getType()).mappedImage(), 0, 0, this.getCardWidth(), this.getCardHeight());
+        var image = card.isToken() ? this.tokenImage : this.cardInfos.get(card.getType()).mappedImage();
+        this.image(image, 0, 0, this.getCardWidth(), this.getCardHeight());
         this.noTint();
         this.popMatrix();
     }
@@ -397,6 +437,10 @@ public class Main extends PApplet {
                 CardKind.PrivilegedPosition, CardKind.Vigor,
                 CardKind.BlazingArchon
         )));
+
+        for (int i = 0; i < 10; i++) {
+            fields.add(new Token());
+        }
 
         return new Player(List.of(), List.of(), fields);
     }

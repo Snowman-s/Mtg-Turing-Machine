@@ -6,10 +6,10 @@ import snowesamosc.mtgturing.CardKind;
 import java.util.List;
 
 public class XathridNecromancer extends RealCard {
-    private final CreatureType originalDieType = CreatureType.Cleric;
+    private final CreatureType originalDieType = CreatureType.Human;
     private final CardColor originalCreateColor = CardColor.Black;
     private final CreatureType originalCreateType = CreatureType.Zombie;
-    private CreatureType dieType = CreatureType.Cleric;
+    private CreatureType dieType = CreatureType.Human;
     private CardColor createColor = CardColor.Black;
     private CreatureType createType = CreatureType.Zombie;
 
