@@ -51,6 +51,11 @@ public class XathridNecromancer extends RealCard {
     }
 
     @Override
+    public List<CardColor> getOriginalColors() {
+        return List.of(CardColor.Black);
+    }
+
+    @Override
     public CardKind getType() {
         return CardKind.XathridNecromancer;
     }

@@ -27,6 +27,11 @@ public class FungusSliver extends RealCard {
     }
 
     @Override
+    public List<CardColor> getOriginalColors() {
+        return List.of(CardColor.Green);
+    }
+
+    @Override
     public CardKind getType() {
         return CardKind.FungusSliver;
     }

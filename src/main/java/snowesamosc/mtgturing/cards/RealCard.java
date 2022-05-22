@@ -3,10 +3,7 @@ package snowesamosc.mtgturing.cards;
 import kotlin.Pair;
 import snowesamosc.mtgturing.CardKind;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -14,6 +11,7 @@ public abstract class RealCard {
     private final List<CreatureType> availableCreatureTypes;
     private boolean tapped = false;
     private boolean phaseIn = true;
+    private SortedSet<CardColor> colorsAdded = new TreeSet<>();
 
     public RealCard() {
         this(List.of());
@@ -59,6 +57,18 @@ public abstract class RealCard {
     }
 
     public abstract CardKind getType();
+
+    public abstract List<CardColor> getOriginalColors();
+
+    public void addColors(Set<CardColor> colors) {
+        this.colorsAdded.addAll(colors);
+    }
+
+    public SortedSet<CardColor> getColors() {
+        var tmp = new TreeSet<>(this.getOriginalColors());
+        tmp.addAll(this.colorsAdded);
+        return tmp;
+    }
 
     public boolean isToken() {
         return false;

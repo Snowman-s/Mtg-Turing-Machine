@@ -2,6 +2,7 @@ package snowesamosc.mtgturing.cards;
 
 import snowesamosc.mtgturing.CardKind;
 
+import java.util.List;
 import java.util.Optional;
 
 public class SharedTriumph extends RealCard {
@@ -14,6 +15,11 @@ public class SharedTriumph extends RealCard {
 
     public void setSelectedType(CreatureType selectedType) {
         this.selectedType = selectedType;
+    }
+
+    @Override
+    public List<CardColor> getOriginalColors() {
+        return List.of(CardColor.White);
     }
 
     @Override

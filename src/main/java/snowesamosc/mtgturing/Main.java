@@ -85,6 +85,8 @@ public class Main extends PApplet {
 
     @Override
     public void draw() {
+        var prop = Property.getInstance();
+
         this.background(0);
         if (!this.loadEnded.get()) {
             this.pushStyle();
@@ -136,16 +138,28 @@ public class Main extends PApplet {
                 var offsetY = new AtomicReference<>(this.getOpPanelWidth() * this.getCardAspectRatio() + 15);
                 this.text(name, 0, offsetY.get());
                 offsetY.set(offsetY.get() + 15);
+
+                if (!this.selectedCard.getColors().isEmpty()) {
+                    this.pushStyle();
+                    this.textSize(13);
+                    var colorText = this.selectedCard.getColors().stream()
+                            .map(prop::translate)
+                            .collect(Collectors.joining());
+                    this.text(colorText, 0, offsetY.get());
+                    offsetY.set(offsetY.get() + 15);
+                    this.popStyle();
+                }
+
                 if (!this.selectedCard.getCreatureTypes().isEmpty()) {
                     this.text(this.selectedCard.getCreatureTypes().stream()
-                            .map(type -> Property.getInstance().translate(type))
+                            .map(prop::translate)
                             .collect(Collectors.joining(" ")), 0, offsetY.get());
                     offsetY.set(offsetY.get() + 15);
                 }
                 this.textSize(13);
                 this.selectedCard.getReplaceColors().stream()
-                        .map(replaceColor -> "(" + Property.getInstance().translate(replaceColor.component1()) +
-                                " → " + Property.getInstance().translate(replaceColor.component2()) + ")")
+                        .map(replaceColor -> "(" + prop.translate(replaceColor.component1()) +
+                                " → " + prop.translate(replaceColor.component2()) + ")")
                         .forEach(
                                 t -> {
                                     this.text(t, 0, offsetY.get());
@@ -153,8 +167,8 @@ public class Main extends PApplet {
                                 }
                         );
                 this.selectedCard.getReplaceTypes().stream()
-                        .map(replaceType -> "(" + Property.getInstance().translate(replaceType.component1()) +
-                                " → " + Property.getInstance().translate(replaceType.component2()) + ")")
+                        .map(replaceType -> "(" + prop.translate(replaceType.component1()) +
+                                " → " + prop.translate(replaceType.component2()) + ")")
                         .forEach(
                                 t -> {
                                     this.text(t, 0, offsetY.get());
@@ -163,7 +177,7 @@ public class Main extends PApplet {
                         );
                 this.selectedCard.getSelectedType().ifPresent(
                         type -> {
-                            this.text("★" + Property.getInstance().translate(type), 0, offsetY.get());
+                            this.text("★" + prop.translate(type), 0, offsetY.get());
                             offsetY.set(offsetY.get() + 15);
                         }
                 );
@@ -350,6 +364,7 @@ public class Main extends PApplet {
                 c.setCreateColor(CardColor.Black);
                 c.setCreateType(CreatureType.Cephalid);
             });
+            card.addColors(Set.of(CardColor.Green, CardColor.White, CardColor.Red));
             fields.add(card);
         }
         {
@@ -402,14 +417,14 @@ public class Main extends PApplet {
                 c.setDieType(element.dieType());
                 c.setCreateColor(element.createColor());
                 c.setCreateType(element.createType());
-                c.setPhaseIn(element.phaseIn());
             });
             card.asThatCard(RoutingReanimator.class, c -> {
                 c.setDieType(element.dieType());
                 c.setCreateColor(element.createColor());
                 c.setCreateType(element.createType());
-                c.setPhaseIn(element.phaseIn());
             });
+            card.setPhaseIn(element.phaseIn());
+            card.addColors(Set.of(CardColor.Green, CardColor.White, CardColor.Red));
             fields.add(card);
         });
 
@@ -420,6 +435,7 @@ public class Main extends PApplet {
                 c.setCreateColor(CardColor.Green);
                 c.setCreateType(CreatureType.Lhurgoyf);
             });
+            card.addColors(Set.of(CardColor.Green, CardColor.White, CardColor.Red));
             fields.add(card);
         }
         {
@@ -429,6 +445,7 @@ public class Main extends PApplet {
                 c.setCreateColor(CardColor.White);
                 c.setCreateType(CreatureType.Rat);
             });
+            card.addColors(Set.of(CardColor.Green, CardColor.White, CardColor.Red));
             fields.add(card);
         }
 

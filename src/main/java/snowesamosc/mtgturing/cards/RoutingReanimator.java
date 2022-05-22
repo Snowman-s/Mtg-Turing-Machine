@@ -46,6 +46,11 @@ public class RoutingReanimator extends RealCard {
     }
 
     @Override
+    public List<CardColor> getOriginalColors() {
+        return List.of(CardColor.Black);
+    }
+
+    @Override
     public List<Pair<CardColor, CardColor>> getReplaceColors() {
         return List.of(new Pair<>(this.originalCreateColor, this.createColor));
     }
