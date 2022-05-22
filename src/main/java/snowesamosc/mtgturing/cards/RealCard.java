@@ -14,16 +14,21 @@ public class RealCard {
     private final Set<CreatureType> originalCreatureTypes;
     private final CardText cardText;
     private final CardKind cardKind;
+    private final int originalPower;
+    private final int originalToughness;
     private boolean tapped = false;
     private boolean phaseIn = true;
 
     public RealCard(CardKind kind, Set<CardColor> originalColors, Set<CardType> originalCardTypes,
-                    Set<CreatureType> originalCreatureTypes, CardText cardText) {
+                    Set<CreatureType> originalCreatureTypes, CardText cardText,
+                    int power, int toughness) {
         this.cardKind = kind;
         this.originalColors = originalColors;
         this.originalCardTypes = originalCardTypes;
         this.originalCreatureTypes = originalCreatureTypes;
         this.cardText = cardText;
+        this.originalPower = power;
+        this.originalToughness = toughness;
     }
 
     public static RealCard createCard(CardKind kind, EnumMap<CardKind, CardCreateData> map) {
@@ -56,7 +61,7 @@ public class RealCard {
 
         var elm = map.get(kind);
 
-        return new RealCard(kind, elm.colors(), elm.types(), elm.creatureTypes(), text);
+        return new RealCard(kind, elm.colors(), elm.types(), elm.creatureTypes(), text, elm.power, elm.toughness);
     }
 
     public static List<RealCard> createCards(List<CardKind> cardTypes, EnumMap<CardKind, CardCreateData> map) {
@@ -137,8 +142,24 @@ public class RealCard {
         }
     }
 
+    public int getOriginalPower() {
+        return this.originalPower;
+    }
+
+    public int getPower() {
+        return this.originalPower;
+    }
+
+    public int getOriginalToughness() {
+        return this.originalToughness;
+    }
+
+    public int getToughness() {
+        return this.originalToughness;
+    }
+
     public record CardCreateData(Set<CardColor> colors, Set<CardType> types,
-                                 Set<CreatureType> creatureTypes) {
+                                 Set<CreatureType> creatureTypes, int power, int toughness) {
 
     }
 }

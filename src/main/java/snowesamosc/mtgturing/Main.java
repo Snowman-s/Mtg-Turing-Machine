@@ -4,10 +4,7 @@ import processing.core.PApplet;
 import processing.core.PFont;
 import processing.core.PImage;
 import processing.event.MouseEvent;
-import snowesamosc.mtgturing.cards.CardColor;
-import snowesamosc.mtgturing.cards.CreatureType;
-import snowesamosc.mtgturing.cards.RealCard;
-import snowesamosc.mtgturing.cards.Token;
+import snowesamosc.mtgturing.cards.*;
 import snowesamosc.mtgturing.cards.cardtexts.*;
 
 import java.awt.geom.Rectangle2D;
@@ -74,7 +71,11 @@ public class Main extends PApplet {
             var attachList = new ArrayList<AttachInfo>();
             var createCardMap = new EnumMap<CardKind, RealCard.CardCreateData>(CardKind.class);
             this.cardInfos.forEach((key1, value) ->
-                    createCardMap.put(key1, new RealCard.CardCreateData(value.colors(), value.types(), value.creatureTypes()))
+                    createCardMap.put(key1,
+                            new RealCard.CardCreateData(value.colors(), value.types(), value.creatureTypes(),
+                                    value.power(), value.toughness()
+                            )
+                    )
             );
 
             game.init(
@@ -195,6 +196,10 @@ public class Main extends PApplet {
                             offsetY.set(offsetY.get() + 15);
                         }
                 );
+                if (this.selectedCard.getCardTypes().contains(CardType.Creature)) {
+                    this.text(this.selectedCard.getPower() + "/" + this.selectedCard.getToughness(), 0, offsetY.get());
+                    offsetY.set(offsetY.get() + 15);
+                }
 
                 this.textSize(15);
                 this.text(text, 0, offsetY.get(), this.getOpPanelWidth(), this.height - offsetY.get());

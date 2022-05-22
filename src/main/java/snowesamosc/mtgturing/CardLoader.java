@@ -91,6 +91,7 @@ public class CardLoader {
         Set<CardColor> colors = new HashSet<>();
         Set<CardType> types = new HashSet<>();
         Set<CreatureType> creatureTypes = new HashSet<>();
+        int power, toughness;
         try (InputStream in = Files.newInputStream(saveDir.resolve(englishCardName + ".png"))) {
             image = ImageIO.read(in);
             if (image == null) throw new IOException("could not read image from file");
@@ -125,10 +126,18 @@ public class CardLoader {
                                 .findAny().orElseThrow(IOException::new)
                 );
             }
+
+            var pt = textLines.remove(0).split("/");
+            try {
+                power = Integer.parseInt(pt[0]);
+                toughness = Integer.parseInt(pt[1]);
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
             txt = String.join("\n", textLines);
         }
 
-        return new CardInfo<>(txt, name, mapper.apply(image), colors, types, creatureTypes);
+        return new CardInfo<>(txt, name, mapper.apply(image), colors, types, creatureTypes, power, toughness);
     }
 
     private static <I> CardInfo<I> loadCardInfoFromCardAPI(String englishCardName, String language, Function<Image, I> mapper) {
@@ -137,7 +146,7 @@ public class CardLoader {
         var optionalCard = cards.stream().filter(c -> c.getName().equals(englishCardName)).findAny();
         if (optionalCard.isEmpty())
             return new CardInfo<>("Load Failed", "Load Failed", mapper.apply(errorImage),
-                    Set.of(), Set.of(), Set.of());
+                    Set.of(), Set.of(), Set.of(), 0, 0);
         var card = optionalCard.get();
 
         var myLangInfo = Optional.ofNullable(card.getForeignNames())
@@ -149,6 +158,9 @@ public class CardLoader {
         var imageUrl = myLangInfo.map(ForeignData::getImageUrl).orElseGet(card::getImageUrl);
         var cardText = myLangInfo.map(ForeignData::getText).orElseGet(card::getText);
         var cardName = myLangInfo.map(ForeignData::getName).orElseGet(card::getName);
+
+        var power = card.getPower() == null ? 0 : Integer.parseInt(card.getPower());
+        var toughness = card.getToughness() == null ? 0 : Integer.parseInt(card.getToughness());
 
         Set<CardColor> colors = card.getColors() == null ?
                 Set.of() :
@@ -204,6 +216,7 @@ public class CardLoader {
                 writer.write(colors.stream().map(Enum::name).collect(Collectors.joining(",")) + "\n");
                 writer.write(types.stream().map(Enum::name).collect(Collectors.joining(",")) + "\n");
                 writer.write(creatureTypes.stream().map(Enum::name).collect(Collectors.joining(",")) + "\n");
+                writer.write(power + "/" + toughness);
                 writer.write(cardText);
             }
         } catch (IOException e) {
@@ -211,7 +224,7 @@ public class CardLoader {
             //一時ファイルとしての保存なので失敗しても支障はない。
         }
 
-        return new CardInfo<>(cardText, cardName, mapper.apply(image), colors, types, creatureTypes);
+        return new CardInfo<>(cardText, cardName, mapper.apply(image), colors, types, creatureTypes, power, toughness);
     }
 
     private static String getCardImageUrlCannotGetUsualWay(String englishCardName, String language, int multiverseId) {
@@ -229,7 +242,8 @@ public class CardLoader {
     }
 
     public static record CardInfo<I>(String cardText, String cardName, I mappedImage,
-                                     Set<CardColor> colors, Set<CardType> types, Set<CreatureType> creatureTypes) {
+                                     Set<CardColor> colors, Set<CardType> types, Set<CreatureType> creatureTypes,
+                                     int power, int toughness) {
 
     }
 }
