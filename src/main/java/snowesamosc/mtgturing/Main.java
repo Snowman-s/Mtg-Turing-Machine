@@ -148,12 +148,18 @@ public class Main extends PApplet {
                 offsetY.set(offsetY.get() + 15);
 
                 this.textSize(13);
-                if (!this.selectedCard.getColors().isEmpty()) {
+                {
                     this.pushStyle();
-                    var colorText = this.selectedCard.getColors().stream()
+                    var colorAndTypeText = "";
+                    if (!this.selectedCard.getColors().isEmpty()) {
+                        colorAndTypeText = this.selectedCard.getColors().stream()
+                                .map(prop::translate)
+                                .collect(Collectors.joining()) + " - ";
+                    }
+                    colorAndTypeText += this.selectedCard.getCardTypes().stream()
                             .map(prop::translate)
                             .collect(Collectors.joining());
-                    this.text(colorText, 0, offsetY.get());
+                    this.text(colorAndTypeText, 0, offsetY.get());
                     offsetY.set(offsetY.get() + 15);
                     this.popStyle();
                 }
