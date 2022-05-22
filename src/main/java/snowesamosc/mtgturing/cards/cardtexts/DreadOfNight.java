@@ -1,11 +1,11 @@
-package snowesamosc.mtgturing.cards;
+package snowesamosc.mtgturing.cards.cardtexts;
 
 import kotlin.Pair;
-import snowesamosc.mtgturing.CardKind;
+import snowesamosc.mtgturing.cards.CardColor;
 
 import java.util.List;
 
-public class DreadOfNight extends RealCard {
+public class DreadOfNight extends CardText {
     private final CardColor originalMinusColor = CardColor.White;
     private CardColor minusColor = CardColor.White;
 
@@ -20,15 +20,5 @@ public class DreadOfNight extends RealCard {
     @Override
     public List<Pair<CardColor, CardColor>> getReplaceColors() {
         return List.of(new Pair<>(this.originalMinusColor, this.minusColor));
-    }
-
-    @Override
-    public List<CardColor> getOriginalColors() {
-        return List.of(CardColor.Black);
-    }
-
-    @Override
-    public CardKind getType() {
-        return CardKind.DreadOfNight;
     }
 }

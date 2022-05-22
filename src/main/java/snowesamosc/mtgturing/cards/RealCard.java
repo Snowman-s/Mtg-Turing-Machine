@@ -1,28 +1,33 @@
 package snowesamosc.mtgturing.cards;
 
-import kotlin.Pair;
 import snowesamosc.mtgturing.CardKind;
+import snowesamosc.mtgturing.cards.cardtexts.*;
 
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public abstract class RealCard {
-    private final List<CreatureType> availableCreatureTypes;
+public class RealCard {
+    private final Set<CardColor> originalColors;
+    private final SortedSet<CardColor> colorsAdded = new TreeSet<>();
+    private final Set<CardType> originalCardTypes;
+    private final Set<CreatureType> originalCreatureTypes;
+    private final CardText cardText;
+    private final CardKind cardKind;
     private boolean tapped = false;
     private boolean phaseIn = true;
-    private SortedSet<CardColor> colorsAdded = new TreeSet<>();
 
-    public RealCard() {
-        this(List.of());
+    public RealCard(CardKind kind, Set<CardColor> originalColors, Set<CardType> originalCardTypes,
+                    Set<CreatureType> originalCreatureTypes, CardText cardText) {
+        this.cardKind = kind;
+        this.originalColors = originalColors;
+        this.originalCardTypes = originalCardTypes;
+        this.originalCreatureTypes = originalCreatureTypes;
+        this.cardText = cardText;
     }
 
-    public RealCard(List<CreatureType> initialCreatureTypes) {
-        this.availableCreatureTypes = new ArrayList<>(initialCreatureTypes);
-    }
-
-    public static RealCard createCard(CardKind type) {
-        return switch (type) {
+    public static RealCard createCard(CardKind kind, EnumMap<CardKind, CardCreateData> map) {
+        var text = switch (kind) {
             case RotlungReanimator -> new RoutingReanimator();
             case XathridNecromancer -> new XathridNecromancer();
             case CloakOfInvisibility -> new CloakOfInvisibility();
@@ -46,19 +51,39 @@ public abstract class RealCard {
             case SoulSnuffers -> new SoulSnuffers();
             case PrismaticLace -> new PrismaticLace();
             case CoalitionVictory -> new CoalitionVictory();
-            case Infest-> new Infest();
+            case Infest -> new Infest();
         };
+
+        var elm = map.get(kind);
+
+        return new RealCard(kind, elm.colors(), elm.types(), elm.creatureTypes(), text);
     }
 
-    public static List<RealCard> createCards(List<CardKind> cardTypes) {
+    public static List<RealCard> createCards(List<CardKind> cardTypes, EnumMap<CardKind, CardCreateData> map) {
         return cardTypes.stream()
-                .map(RealCard::createCard)
+                .map(type -> createCard(type, map))
                 .collect(Collectors.toList());
     }
 
-    public abstract CardKind getType();
+    public CardKind getKind() {
+        return this.cardKind;
+    }
 
-    public abstract List<CardColor> getOriginalColors();
+    public Set<CardColor> getOriginalColors() {
+        return this.originalColors;
+    }
+
+    public Set<CardType> getOriginalCardTypes() {
+        return this.originalCardTypes;
+    }
+
+    public Set<CreatureType> getOriginalCreatureTypes() {
+        return this.originalCreatureTypes;
+    }
+
+    public CardText getText() {
+        return this.cardText;
+    }
 
     public void addColors(Set<CardColor> colors) {
         this.colorsAdded.addAll(colors);
@@ -68,6 +93,10 @@ public abstract class RealCard {
         var tmp = new TreeSet<>(this.getOriginalColors());
         tmp.addAll(this.colorsAdded);
         return tmp;
+    }
+
+    public SortedSet<CardType> getCardTypes() {
+        return new TreeSet<>(this.getOriginalCardTypes());
     }
 
     public boolean isToken() {
@@ -99,24 +128,17 @@ public abstract class RealCard {
     }
 
     public List<CreatureType> getCreatureTypes() {
-        return List.copyOf(this.availableCreatureTypes);
+        return List.copyOf(this.getOriginalCreatureTypes());
     }
 
-    public <T extends RealCard> void asThatCard(Class<T> to, Consumer<T> consumer) {
-        if (this.getClass().isAssignableFrom(to)) {
-            consumer.accept(to.cast(this));
+    public <T extends CardText> void asThatCardText(Class<T> to, Consumer<T> consumer) {
+        if (this.cardText.getClass().isAssignableFrom(to)) {
+            consumer.accept(to.cast(this.cardText));
         }
     }
 
-    public List<Pair<CreatureType, CreatureType>> getReplaceTypes() {
-        return Collections.emptyList();
-    }
+    public record CardCreateData(Set<CardColor> colors, Set<CardType> types,
+                                 Set<CreatureType> creatureTypes) {
 
-    public List<Pair<CardColor, CardColor>> getReplaceColors() {
-        return Collections.emptyList();
-    }
-
-    public Optional<CreatureType> getSelectedType() {
-        return Optional.empty();
     }
 }

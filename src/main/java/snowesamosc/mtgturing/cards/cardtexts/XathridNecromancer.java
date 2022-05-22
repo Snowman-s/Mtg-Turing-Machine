@@ -1,11 +1,12 @@
-package snowesamosc.mtgturing.cards;
+package snowesamosc.mtgturing.cards.cardtexts;
 
 import kotlin.Pair;
-import snowesamosc.mtgturing.CardKind;
+import snowesamosc.mtgturing.cards.CardColor;
+import snowesamosc.mtgturing.cards.CreatureType;
 
 import java.util.List;
 
-public class XathridNecromancer extends RealCard {
+public class XathridNecromancer extends CardText {
     private final CreatureType originalDieType = CreatureType.Human;
     private final CardColor originalCreateColor = CardColor.Black;
     private final CreatureType originalCreateType = CreatureType.Zombie;
@@ -50,14 +51,5 @@ public class XathridNecromancer extends RealCard {
         return List.of(new Pair<>(this.originalCreateColor, this.createColor));
     }
 
-    @Override
-    public List<CardColor> getOriginalColors() {
-        return List.of(CardColor.Black);
-    }
-
-    @Override
-    public CardKind getType() {
-        return CardKind.XathridNecromancer;
-    }
 }
 

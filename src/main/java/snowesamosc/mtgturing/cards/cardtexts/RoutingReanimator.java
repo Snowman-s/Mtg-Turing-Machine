@@ -1,11 +1,12 @@
-package snowesamosc.mtgturing.cards;
+package snowesamosc.mtgturing.cards.cardtexts;
 
 import kotlin.Pair;
-import snowesamosc.mtgturing.CardKind;
+import snowesamosc.mtgturing.cards.CardColor;
+import snowesamosc.mtgturing.cards.CreatureType;
 
 import java.util.List;
 
-public class RoutingReanimator extends RealCard {
+public class RoutingReanimator extends CardText {
     private final CreatureType originalDieType = CreatureType.Cleric;
     private final CardColor originalCreateColor = CardColor.Black;
     private final CreatureType originalCreateType = CreatureType.Zombie;
@@ -46,17 +47,7 @@ public class RoutingReanimator extends RealCard {
     }
 
     @Override
-    public List<CardColor> getOriginalColors() {
-        return List.of(CardColor.Black);
-    }
-
-    @Override
     public List<Pair<CardColor, CardColor>> getReplaceColors() {
         return List.of(new Pair<>(this.originalCreateColor, this.createColor));
-    }
-
-    @Override
-    public CardKind getType() {
-        return CardKind.RotlungReanimator;
     }
 }

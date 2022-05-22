@@ -1,13 +1,12 @@
 package snowesamosc.mtgturing.cards;
 
-import snowesamosc.mtgturing.CardKind;
+import snowesamosc.mtgturing.cards.cardtexts.CardText;
 
-import java.util.List;
+import java.util.Set;
 
 public class Token extends RealCard {
-    @Override
-    public List<CardColor> getOriginalColors() {
-        return List.of();
+    public Token() {
+        super(null, Set.of(), Set.of(), Set.of(), new CardText());
     }
 
     @Override
@@ -15,8 +14,4 @@ public class Token extends RealCard {
         return true;
     }
 
-    @Override
-    public CardKind getType() {
-        return null;
-    }
 }

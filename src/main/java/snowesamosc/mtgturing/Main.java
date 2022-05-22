@@ -4,7 +4,11 @@ import processing.core.PApplet;
 import processing.core.PFont;
 import processing.core.PImage;
 import processing.event.MouseEvent;
-import snowesamosc.mtgturing.cards.*;
+import snowesamosc.mtgturing.cards.CardColor;
+import snowesamosc.mtgturing.cards.CreatureType;
+import snowesamosc.mtgturing.cards.RealCard;
+import snowesamosc.mtgturing.cards.Token;
+import snowesamosc.mtgturing.cards.cardtexts.*;
 
 import java.awt.geom.Rectangle2D;
 import java.util.*;
@@ -68,10 +72,14 @@ public class Main extends PApplet {
 
             var game = Game.getInstance();
             var attachList = new ArrayList<AttachInfo>();
+            var createCardMap = new EnumMap<CardKind, RealCard.CardCreateData>(CardKind.class);
+            this.cardInfos.forEach((key1, value) ->
+                    createCardMap.put(key1, new RealCard.CardCreateData(value.colors(), value.types(), value.creatureTypes()))
+            );
 
             game.init(
-                    this.createBob(attachList),
-                    this.createAlice(attachList),
+                    this.createBob(attachList, createCardMap),
+                    this.createAlice(attachList, createCardMap),
                     System.out::println
             );
 
@@ -123,7 +131,7 @@ public class Main extends PApplet {
                     name = "Token";
                     text = "";
                 } else {
-                    var cardInfo = this.cardInfos.get(this.selectedCard.getType());
+                    var cardInfo = this.cardInfos.get(this.selectedCard.getKind());
                     image = cardInfo.mappedImage();
                     name = cardInfo.cardName();
                     text = cardInfo.cardText();
@@ -139,9 +147,9 @@ public class Main extends PApplet {
                 this.text(name, 0, offsetY.get());
                 offsetY.set(offsetY.get() + 15);
 
+                this.textSize(13);
                 if (!this.selectedCard.getColors().isEmpty()) {
                     this.pushStyle();
-                    this.textSize(13);
                     var colorText = this.selectedCard.getColors().stream()
                             .map(prop::translate)
                             .collect(Collectors.joining());
@@ -156,8 +164,8 @@ public class Main extends PApplet {
                             .collect(Collectors.joining(" ")), 0, offsetY.get());
                     offsetY.set(offsetY.get() + 15);
                 }
-                this.textSize(13);
-                this.selectedCard.getReplaceColors().stream()
+
+                this.selectedCard.getText().getReplaceColors().stream()
                         .map(replaceColor -> "(" + prop.translate(replaceColor.component1()) +
                                 " → " + prop.translate(replaceColor.component2()) + ")")
                         .forEach(
@@ -166,7 +174,7 @@ public class Main extends PApplet {
                                     offsetY.set(offsetY.get() + 15);
                                 }
                         );
-                this.selectedCard.getReplaceTypes().stream()
+                this.selectedCard.getText().getReplaceTypes().stream()
                         .map(replaceType -> "(" + prop.translate(replaceType.component1()) +
                                 " → " + prop.translate(replaceType.component2()) + ")")
                         .forEach(
@@ -175,7 +183,7 @@ public class Main extends PApplet {
                                     offsetY.set(offsetY.get() + 15);
                                 }
                         );
-                this.selectedCard.getSelectedType().ifPresent(
+                this.selectedCard.getText().getSelectedType().ifPresent(
                         type -> {
                             this.text("★" + prop.translate(type), 0, offsetY.get());
                             offsetY.set(offsetY.get() + 15);
@@ -203,7 +211,7 @@ public class Main extends PApplet {
 
         Comparator<RealCard> comparator = (a, b) ->
                 Comparator.nullsLast(Comparator.comparing((CardKind t) -> t))
-                        .compare(a.getType(), b.getType());
+                        .compare(a.getKind(), b.getKind());
 
         this.cardGeometries = new ArrayList<>();
         final float caX = this.getOpPanelWidth(); //cardAreaX
@@ -216,7 +224,7 @@ public class Main extends PApplet {
                     .sorted(comparator)
                     .forEach(
                             card -> {
-                                var type = card.getType();
+                                var type = card.getKind();
                                 var deltaX = card.isToken() ?
                                         this.getCardWidth() / 10F :
                                         (beforeCardType.get() == type ? this.getCardWidth() / 10F : this.getCardWidth() * 0.8F);
@@ -259,7 +267,7 @@ public class Main extends PApplet {
                     .sorted(comparator)
                     .forEach(
                             card -> {
-                                var type = card.getType();
+                                var type = card.getKind();
                                 var deltaX = card.isToken() ?
                                         this.getCardWidth() / 10F :
                                         (beforeCardType.get() == type ? this.getCardWidth() / 10F : this.getCardWidth() * 0.8F);
@@ -326,40 +334,40 @@ public class Main extends PApplet {
         if (!card.isPhaseIn()) {
             this.tint(100, 100, 100);
         }
-        var image = card.isToken() ? this.tokenImage : this.cardInfos.get(card.getType()).mappedImage();
+        var image = card.isToken() ? this.tokenImage : this.cardInfos.get(card.getKind()).mappedImage();
         this.image(image, 0, 0, this.getCardWidth(), this.getCardHeight());
         this.noTint();
         this.popMatrix();
     }
 
-    private Player createAlice(List<AttachInfo> attachList) {
+    private Player createAlice(List<AttachInfo> attachList, EnumMap<CardKind, RealCard.CardCreateData> map) {
         var fields = new ArrayList<RealCard>();
         attachList.forEach(attach -> {
-            var card = RealCard.createCard(CardKind.CloakOfInvisibility);
+            var card = RealCard.createCard(CardKind.CloakOfInvisibility, map);
             attach.setSub(card);
             card.setPhaseIn(attach.getMain().isPhaseIn());
             fields.add(card);
         });
-        fields.add(RealCard.createCard(CardKind.WheelOfSunAndMoon));
-        fields.add(RealCard.createCard(CardKind.IllusoryGains));
+        fields.add(RealCard.createCard(CardKind.WheelOfSunAndMoon, map));
+        fields.add(RealCard.createCard(CardKind.IllusoryGains, map));
         {
-            RealCard card = RealCard.createCard(CardKind.SteelyResolve);
-            card.asThatCard(SteelyResolve.class, c -> c.setSelectedType(CreatureType.AssemblyWorker));
+            RealCard card = RealCard.createCard(CardKind.SteelyResolve, map);
+            card.asThatCardText(SteelyResolve.class, c -> c.setSelectedType(CreatureType.AssemblyWorker));
             fields.add(card);
         }
         for (int i = 0; i < 2; i++) {
-            RealCard card = RealCard.createCard(CardKind.DreadOfNight);
-            card.asThatCard(DreadOfNight.class, c -> c.setMinusColor(CardColor.Black));
+            RealCard card = RealCard.createCard(CardKind.DreadOfNight, map);
+            card.asThatCardText(DreadOfNight.class, c -> c.setMinusColor(CardColor.Black));
             fields.add(card);
         }
         {
-            RealCard card = RealCard.createCard(CardKind.FungusSliver);
-            card.asThatCard(FungusSliver.class, c -> c.setPlusType(CreatureType.Incarnation));
+            RealCard card = RealCard.createCard(CardKind.FungusSliver, map);
+            card.asThatCardText(FungusSliver.class, c -> c.setPlusType(CreatureType.Incarnation));
             fields.add(card);
         }
         {
-            RealCard card = RealCard.createCard(CardKind.RotlungReanimator);
-            card.asThatCard(RoutingReanimator.class, c -> {
+            RealCard card = RealCard.createCard(CardKind.RotlungReanimator, map);
+            card.asThatCardText(RoutingReanimator.class, c -> {
                 c.setDieType(CreatureType.Lhurgoyf);
                 c.setCreateColor(CardColor.Black);
                 c.setCreateType(CreatureType.Cephalid);
@@ -368,30 +376,31 @@ public class Main extends PApplet {
             fields.add(card);
         }
         {
-            RealCard card = RealCard.createCard(CardKind.SharedTriumph);
-            card.asThatCard(SharedTriumph.class, c -> c.setSelectedType(CreatureType.Lhurgoyf));
+            RealCard card = RealCard.createCard(CardKind.SharedTriumph, map);
+            card.asThatCardText(SharedTriumph.class, c -> c.setSelectedType(CreatureType.Lhurgoyf));
             fields.add(card);
         }
         {
-            RealCard card = RealCard.createCard(CardKind.RotlungReanimator);
-            card.asThatCard(RoutingReanimator.class, c -> {
+            RealCard card = RealCard.createCard(CardKind.RotlungReanimator, map);
+            card.asThatCardText(RoutingReanimator.class, c -> {
                 c.setDieType(CreatureType.Rat);
                 c.setCreateColor(CardColor.Black);
                 c.setCreateType(CreatureType.Cephalid);
             });
+            card.addColors(Set.of(CardColor.Green, CardColor.White, CardColor.Red));
             fields.add(card);
         }
         {
-            RealCard card = RealCard.createCard(CardKind.SharedTriumph);
-            card.asThatCard(SharedTriumph.class, c -> c.setSelectedType(CreatureType.Rat));
+            RealCard card = RealCard.createCard(CardKind.SharedTriumph, map);
+            card.asThatCardText(SharedTriumph.class, c -> c.setSelectedType(CreatureType.Rat));
             fields.add(card);
         }
 
         fields.addAll(RealCard.createCards(List.of(
                 CardKind.Vigor, CardKind.MesmericOrb, CardKind.PrismaticOmen,
-                CardKind.Choke, CardKind.BlazingArchon)));
+                CardKind.Choke, CardKind.BlazingArchon), map));
         {
-            var c = RealCard.createCard(CardKind.AncientTomb);
+            var c = RealCard.createCard(CardKind.AncientTomb, map);
             c.tap();
             fields.add(c);
         }
@@ -400,25 +409,25 @@ public class Main extends PApplet {
                 CardKind.CleansingBeam,
                 CardKind.CoalitionVictory,
                 CardKind.SoulSnuffers
-        )),
+        ), map),
                 RealCard.createCards(List.of(
                         CardKind.Infest
-                )),
+                ), map),
                 fields);
     }
 
-    private Player createBob(List<AttachInfo> attachRequire) {
+    private Player createBob(List<AttachInfo> attachRequire, EnumMap<CardKind, RealCard.CardCreateData> map) {
         var fields = new ArrayList<RealCard>();
 
         this.controllerInfo.forEach(element -> {
-            var card = RealCard.createCard(element.kind());
+            var card = RealCard.createCard(element.kind(), map);
             attachRequire.add(new AttachInfo(card));
-            card.asThatCard(XathridNecromancer.class, c -> {
+            card.asThatCardText(XathridNecromancer.class, c -> {
                 c.setDieType(element.dieType());
                 c.setCreateColor(element.createColor());
                 c.setCreateType(element.createType());
             });
-            card.asThatCard(RoutingReanimator.class, c -> {
+            card.asThatCardText(RoutingReanimator.class, c -> {
                 c.setDieType(element.dieType());
                 c.setCreateColor(element.createColor());
                 c.setCreateType(element.createType());
@@ -429,8 +438,8 @@ public class Main extends PApplet {
         });
 
         {
-            RealCard card = RealCard.createCard(CardKind.RotlungReanimator);
-            card.asThatCard(RoutingReanimator.class, c -> {
+            RealCard card = RealCard.createCard(CardKind.RotlungReanimator, map);
+            card.asThatCardText(RoutingReanimator.class, c -> {
                 c.setDieType(CreatureType.Lhurgoyf);
                 c.setCreateColor(CardColor.Green);
                 c.setCreateType(CreatureType.Lhurgoyf);
@@ -439,8 +448,8 @@ public class Main extends PApplet {
             fields.add(card);
         }
         {
-            RealCard card = RealCard.createCard(CardKind.RotlungReanimator);
-            card.asThatCard(RoutingReanimator.class, c -> {
+            RealCard card = RealCard.createCard(CardKind.RotlungReanimator, map);
+            card.asThatCardText(RoutingReanimator.class, c -> {
                 c.setDieType(CreatureType.Rat);
                 c.setCreateColor(CardColor.White);
                 c.setCreateType(CreatureType.Rat);
@@ -453,7 +462,7 @@ public class Main extends PApplet {
                 CardKind.WildEvocation, CardKind.Recycle,
                 CardKind.PrivilegedPosition, CardKind.Vigor,
                 CardKind.BlazingArchon
-        )));
+        ), map));
 
         for (int i = 0; i < 10; i++) {
             fields.add(new Token());
