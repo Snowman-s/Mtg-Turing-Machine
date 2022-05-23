@@ -360,7 +360,15 @@ public class Main extends PApplet {
             fields.add(card);
         });
         fields.add(RealCard.createCard(CardKind.WheelOfSunAndMoon, map));
-        fields.add(RealCard.createCard(CardKind.IllusoryGains, map));
+        {
+            var illusory = RealCard.createCard(CardKind.IllusoryGains, map);
+            var token = new Token();
+            var attach = new AttachInfo(token);
+            attach.setSub(illusory);
+            attachList.add(attach);
+            fields.add(illusory);
+            fields.add(token);
+        }
         {
             RealCard card = RealCard.createCard(CardKind.SteelyResolve, map);
             card.asThatCardText(SteelyResolve.class, c -> c.setSelectedType(CreatureType.AssemblyWorker));
