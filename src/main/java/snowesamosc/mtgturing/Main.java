@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 
 public class Main extends PApplet {
     private final AtomicBoolean loadEnded = new AtomicBoolean(false);
+    private List<CreatureType> tape;
     private EnumMap<CardKind, CardLoader.CardInfo<PImage>> cardInfos = new EnumMap<>(CardKind.class);
     private PImage tokenImage = null;
     private RealCard selectedCard = null;
@@ -40,7 +41,7 @@ public class Main extends PApplet {
         var prop = Property.getInstance();
 
         new Thread(() -> {
-            var count = new CountDownLatch(4);
+            var count = new CountDownLatch(5);
             new Thread(() -> {
                 this.cardInfos = CardLoader.loadAllCard(EnumSet.allOf(CardKind.class), prop.getLanguage(), PImage::new);
                 count.countDown();
@@ -57,6 +58,11 @@ public class Main extends PApplet {
             new Thread(() -> {
                 this.controllerInfo = ControllerLoader.loadTable2();
                 System.out.println("Controller data was loaded.");
+                count.countDown();
+            }).start();
+            new Thread(() -> {
+                this.tape = TapeLoader.loadTape();
+                System.out.println("Tape data was loaded.");
                 count.countDown();
             }).start();
 
@@ -362,7 +368,7 @@ public class Main extends PApplet {
         fields.add(RealCard.createCard(CardKind.WheelOfSunAndMoon, map));
         {
             var illusory = RealCard.createCard(CardKind.IllusoryGains, map);
-            var token = new Token();
+            var token = new CreatureToken(CardColor.Green, CreatureType.Cephalid, 3, 3);
             var attach = new AttachInfo(token);
             attach.setSub(illusory);
             attachList.add(attach);
@@ -483,8 +489,9 @@ public class Main extends PApplet {
                 CardKind.BlazingArchon
         ), map));
 
-        for (int i = 0; i < 10; i++) {
-            fields.add(new Token());
+        for (int i = 0; i < this.tape.size(); i++) {
+            var elm = this.tape.get(i);
+            fields.add(new CreatureToken(CardColor.White, elm, 2 + i, 2 + i));
         }
 
         return new Player(List.of(), List.of(), fields);
