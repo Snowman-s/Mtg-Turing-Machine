@@ -447,6 +447,11 @@ public class Main extends PApplet {
             fields.add(c);
         }
 
+        fields.stream()
+                .filter(card -> !card.isToken())
+                .filter(card -> card.getCardTypes().contains(CardType.Creature))
+                .forEach(card -> card.addCreatureType(Set.of(CreatureType.AssemblyWorker)));
+
         return new Player(RealCard.createCards(List.of(
                 CardKind.CleansingBeam,
                 CardKind.CoalitionVictory,

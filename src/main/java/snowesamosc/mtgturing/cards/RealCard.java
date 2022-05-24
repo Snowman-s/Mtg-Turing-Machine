@@ -12,6 +12,7 @@ public class RealCard {
     private final SortedSet<CardColor> colorsAdded = new TreeSet<>();
     private final Set<CardType> originalCardTypes;
     private final Set<CreatureType> originalCreatureTypes;
+    private final SortedSet<CreatureType> creatureTypesAdded = new TreeSet<>();
     private final CardText cardText;
     private final CardKind cardKind;
     private final int originalPower;
@@ -133,8 +134,14 @@ public class RealCard {
         this.phaseIn = phaseIn;
     }
 
-    public List<CreatureType> getCreatureTypes() {
-        return List.copyOf(this.getOriginalCreatureTypes());
+    public void addCreatureType(Set<CreatureType> creatureTypes) {
+        this.creatureTypesAdded.addAll(creatureTypes);
+    }
+
+    public SortedSet<CreatureType> getCreatureTypes() {
+        var tmp = new TreeSet<>(this.getOriginalCreatureTypes());
+        tmp.addAll(this.creatureTypesAdded);
+        return tmp;
     }
 
     public <T extends CardText> void asThatCardText(Class<T> to, Consumer<T> consumer) {
