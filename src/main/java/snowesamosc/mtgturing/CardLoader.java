@@ -216,7 +216,7 @@ public class CardLoader {
                 writer.write(colors.stream().map(Enum::name).collect(Collectors.joining(",")) + "\n");
                 writer.write(types.stream().map(Enum::name).collect(Collectors.joining(",")) + "\n");
                 writer.write(creatureTypes.stream().map(Enum::name).collect(Collectors.joining(",")) + "\n");
-                writer.write(power + "/" + toughness);
+                writer.write(power + "/" + toughness + "\n");
                 writer.write(cardText);
             }
         } catch (IOException e) {
