@@ -131,7 +131,8 @@ public class Main extends PApplet {
             this.pushStyle();
 
             this.renderCard(this.selectedCard, 0, 0,
-                    this.getOpPanelWidth(), this.getOpPanelWidth() * this.getCardAspectRatio());
+                    this.getOpPanelWidth(), this.getOpPanelWidth() * this.getCardAspectRatio(),
+                    true);
 
             String name, text;
             {
@@ -215,7 +216,9 @@ public class Main extends PApplet {
         this.setCardGeometries();
 
         this.pushStyle();
-        this.cardGeometries.forEach(i -> this.renderCard(i.card, i.geometry.x, i.geometry.y, this.getCardWidth(), this.getCardHeight()));
+        this.cardGeometries.forEach(i ->
+                this.renderCard(i.card, i.geometry.x, i.geometry.y,
+                        this.getCardWidth(), this.getCardHeight(), false));
         this.popStyle();
     }
 
@@ -339,10 +342,10 @@ public class Main extends PApplet {
         return this.width / 8F;
     }
 
-    private void renderCard(RealCard card, float x, float y, float width, float height) {
+    private void renderCard(RealCard card, float x, float y, float width, float height, boolean ignoreTapped) {
         this.pushMatrix();
         this.translate(x, y);
-        if (card.isTapped()) {
+        if (!ignoreTapped && card.isTapped()) {
             this.translate(height, 0);
             this.rotate(PI / 2);
         }
