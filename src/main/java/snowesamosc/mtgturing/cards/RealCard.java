@@ -18,6 +18,7 @@ public class RealCard {
     private final int originalToughness;
     private boolean tapped = false;
     private boolean phaseIn = true;
+    private int plus1CounterNum = 0;
 
     public RealCard(CardKind kind, Set<CardColor> originalColors, Set<CardType> originalCardTypes,
                     Set<CreatureType> originalCreatureTypes, CardText cardText,
@@ -147,7 +148,7 @@ public class RealCard {
     }
 
     public int getPower() {
-        return this.originalPower;
+        return this.originalPower + this.plus1CounterNum;
     }
 
     public int getOriginalToughness() {
@@ -155,7 +156,15 @@ public class RealCard {
     }
 
     public int getToughness() {
-        return this.originalToughness;
+        return this.originalToughness + this.plus1CounterNum;
+    }
+
+    public void putPlusOrMinus1Counter(int counterNum) {
+        this.plus1CounterNum += counterNum;
+    }
+
+    public int getPlusOrMinus1CounterNum() {
+        return this.plus1CounterNum;
     }
 
     public record CardCreateData(Set<CardColor> colors, Set<CardType> types,

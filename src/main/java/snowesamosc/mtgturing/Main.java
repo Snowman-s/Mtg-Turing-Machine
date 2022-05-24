@@ -130,23 +130,21 @@ public class Main extends PApplet {
         if (this.selectedCard != null) {
             this.pushStyle();
 
-            PImage image;
+            this.renderCard(this.selectedCard, 0, 0,
+                    this.getOpPanelWidth(), this.getOpPanelWidth() * this.getCardAspectRatio());
+
             String name, text;
             {
                 if (this.selectedCard.isToken()) {
-                    image = this.tokenImage;
                     name = "Token";
                     text = "";
                 } else {
                     var cardInfo = this.cardInfos.get(this.selectedCard.getKind());
-                    image = cardInfo.mappedImage();
                     name = cardInfo.cardName();
                     text = cardInfo.cardText();
                 }
             }
 
-            this.image(image,
-                    0, 0, this.getOpPanelWidth(), this.getOpPanelWidth() * this.getCardAspectRatio());
             this.fill(255);
             this.textFont(this.cardTextFont);
             {
@@ -217,7 +215,7 @@ public class Main extends PApplet {
         this.setCardGeometries();
 
         this.pushStyle();
-        this.cardGeometries.forEach(i -> this.renderCard(i.card, i.geometry.x, i.geometry.y));
+        this.cardGeometries.forEach(i -> this.renderCard(i.card, i.geometry.x, i.geometry.y, this.getCardWidth(), this.getCardHeight()));
         this.popStyle();
     }
 
@@ -341,18 +339,32 @@ public class Main extends PApplet {
         return this.width / 8F;
     }
 
-    private void renderCard(RealCard card, float x, float y) {
+    private void renderCard(RealCard card, float x, float y, float width, float height) {
         this.pushMatrix();
         this.translate(x, y);
         if (card.isTapped()) {
-            this.translate(this.getCardHeight(), 0);
+            this.translate(height, 0);
             this.rotate(PI / 2);
         }
         if (!card.isPhaseIn()) {
             this.tint(100, 100, 100);
         }
         var image = card.isToken() ? this.tokenImage : this.cardInfos.get(card.getKind()).mappedImage();
-        this.image(image, 0, 0, this.getCardWidth(), this.getCardHeight());
+        this.image(image, 0, 0, width, height);
+        var counterNum = card.getPlusOrMinus1CounterNum();
+        if (counterNum != 0) {
+            this.pushStyle();
+            var counterCircleDiameter = width / 3;
+            if (counterNum > 0) this.fill(0, 0, 255);
+            else this.fill(255, 0, 0);
+            this.ellipse(counterCircleDiameter / 2, counterCircleDiameter / 2, counterCircleDiameter, counterCircleDiameter);
+            this.textSize(counterCircleDiameter * 0.6F);
+            this.fill(255);
+            this.textAlign(CENTER, CENTER);
+            var counterStr = (counterNum > 0 ? "+" : "-") + abs(counterNum);
+            this.text(counterStr, 0, 0, counterCircleDiameter, counterCircleDiameter);
+            this.popStyle();
+        }
         this.noTint();
         this.popMatrix();
     }
@@ -398,6 +410,7 @@ public class Main extends PApplet {
                 c.setCreateType(CreatureType.Cephalid);
             });
             card.addColors(Set.of(CardColor.Green, CardColor.White, CardColor.Red));
+            card.putPlusOrMinus1Counter(3);
             fields.add(card);
         }
         {
@@ -413,6 +426,7 @@ public class Main extends PApplet {
                 c.setCreateType(CreatureType.Cephalid);
             });
             card.addColors(Set.of(CardColor.Green, CardColor.White, CardColor.Red));
+            card.putPlusOrMinus1Counter(3);
             fields.add(card);
         }
         {
@@ -459,6 +473,7 @@ public class Main extends PApplet {
             });
             card.setPhaseIn(element.phaseIn());
             card.addColors(Set.of(CardColor.Green, CardColor.White, CardColor.Red));
+            card.putPlusOrMinus1Counter(3);
             fields.add(card);
         });
 
@@ -470,6 +485,7 @@ public class Main extends PApplet {
                 c.setCreateType(CreatureType.Lhurgoyf);
             });
             card.addColors(Set.of(CardColor.Green, CardColor.White, CardColor.Red));
+            card.putPlusOrMinus1Counter(3);
             fields.add(card);
         }
         {
@@ -480,6 +496,7 @@ public class Main extends PApplet {
                 c.setCreateType(CreatureType.Rat);
             });
             card.addColors(Set.of(CardColor.Green, CardColor.White, CardColor.Red));
+            card.putPlusOrMinus1Counter(3);
             fields.add(card);
         }
 
