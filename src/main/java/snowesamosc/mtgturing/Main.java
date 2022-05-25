@@ -153,61 +153,50 @@ public class Main extends PApplet {
                 this.text(name, 0, offsetY.get());
                 offsetY.set(offsetY.get() + 15);
 
-                this.textSize(13);
-                {
-                    this.pushStyle();
-                    var colorAndTypeText = "";
-                    if (!this.selectedCard.getColors().isEmpty()) {
-                        colorAndTypeText = this.selectedCard.getColors().stream()
-                                .map(prop::translate)
-                                .collect(Collectors.joining()) + " - ";
-                    }
-                    colorAndTypeText += this.selectedCard.getCardTypes().stream()
+                StringBuilder textBuilder = new StringBuilder();
+                if (!this.selectedCard.getColors().isEmpty()) {
+                    textBuilder.append(this.selectedCard.getColors().stream()
                             .map(prop::translate)
-                            .collect(Collectors.joining());
-                    this.text(colorAndTypeText, 0, offsetY.get());
-                    offsetY.set(offsetY.get() + 15);
-                    this.popStyle();
+                            .collect(Collectors.joining())
+                    ).append(" - ");
                 }
+                textBuilder.append(this.selectedCard.getCardTypes().stream()
+                        .map(prop::translate)
+                        .collect(Collectors.joining())
+                ).append("\n");
 
                 if (!this.selectedCard.getCreatureTypes().isEmpty()) {
-                    this.text(this.selectedCard.getCreatureTypes().stream()
+                    textBuilder.append(this.selectedCard.getCreatureTypes().stream()
                             .map(prop::translate)
-                            .collect(Collectors.joining(" ")), 0, offsetY.get());
-                    offsetY.set(offsetY.get() + 15);
+                            .collect(Collectors.joining(" "))
+                    ).append("\n");
                 }
 
                 this.selectedCard.getText().getReplaceColors().stream()
                         .map(replaceColor -> "(" + prop.translate(replaceColor.component1()) +
                                 " → " + prop.translate(replaceColor.component2()) + ")")
-                        .forEach(
-                                t -> {
-                                    this.text(t, 0, offsetY.get());
-                                    offsetY.set(offsetY.get() + 15);
-                                }
-                        );
+                        .forEach(color -> textBuilder.append(color).append("\n"));
                 this.selectedCard.getText().getReplaceTypes().stream()
                         .map(replaceType -> "(" + prop.translate(replaceType.component1()) +
                                 " → " + prop.translate(replaceType.component2()) + ")")
-                        .forEach(
-                                t -> {
-                                    this.text(t, 0, offsetY.get());
-                                    offsetY.set(offsetY.get() + 15);
-                                }
-                        );
+                        .forEach(type -> textBuilder.append(type).append("\n"));
                 this.selectedCard.getText().getSelectedType().ifPresent(
-                        type -> {
-                            this.text("★" + prop.translate(type), 0, offsetY.get());
-                            offsetY.set(offsetY.get() + 15);
-                        }
+                        type -> textBuilder.append("★")
+                                .append(prop.translate(type))
+                                .append("\n")
                 );
                 if (this.selectedCard.getCardTypes().contains(CardType.Creature)) {
-                    this.text(this.selectedCard.getPower() + "/" + this.selectedCard.getToughness(), 0, offsetY.get());
-                    offsetY.set(offsetY.get() + 15);
+                    textBuilder
+                            .append(this.selectedCard.getPower())
+                            .append("/")
+                            .append(this.selectedCard.getToughness())
+                            .append("\n");
                 }
-
-                this.textSize(15);
-                this.text(text, 0, offsetY.get(), this.getOpPanelWidth(), this.height - offsetY.get());
+                textBuilder.append("\n");
+                textBuilder.append(text);
+                this.textSize(13);
+                this.text(textBuilder.toString(), 0, offsetY.get(),
+                        this.getOpPanelWidth(), this.height - offsetY.get());
             }
             this.popStyle();
         }
