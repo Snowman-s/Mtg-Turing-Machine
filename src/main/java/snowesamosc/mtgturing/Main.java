@@ -224,7 +224,7 @@ public class Main extends PApplet {
         final float caX = this.getOpPanelWidth(); //cardAreaX
         {
             AtomicReference<Float> lastNormalX = new AtomicReference<>(caX - this.getCardWidth() * 0.8F);
-            AtomicReference<Float> lastTokenX = new AtomicReference<>(caX - this.getCardWidth() / 10F);
+            AtomicReference<Float> lastTokenX = new AtomicReference<>(caX - this.getCardWidth());
             AtomicReference<CardKind> beforeCardType = new AtomicReference<>(null);
             bob.field().stream()
                     .filter(card -> !game.isAttachSub(card))
@@ -233,7 +233,7 @@ public class Main extends PApplet {
                             card -> {
                                 var type = card.getKind();
                                 var deltaX = card.isToken() ?
-                                        this.getCardWidth() / 10F :
+                                        this.getCardWidth() :
                                         (beforeCardType.get() == type ? this.getCardWidth() / 10F : this.getCardWidth() * 0.8F);
                                 var renderX = card.isToken() ?
                                         lastTokenX.updateAndGet(x -> x + deltaX) :
@@ -267,7 +267,7 @@ public class Main extends PApplet {
         }
         {
             AtomicReference<Float> lastNormalX = new AtomicReference<>(caX - this.getCardWidth() * 0.8F);
-            AtomicReference<Float> lastTokenX = new AtomicReference<>(caX - this.getCardWidth() / 10F);
+            AtomicReference<Float> lastTokenX = new AtomicReference<>(caX - this.getCardWidth());
             AtomicReference<CardKind> beforeCardType = new AtomicReference<>(null);
             alice.field().stream()
                     .filter(card -> !game.isAttachSub(card))
@@ -276,7 +276,7 @@ public class Main extends PApplet {
                             card -> {
                                 var type = card.getKind();
                                 var deltaX = card.isToken() ?
-                                        this.getCardWidth() / 10F :
+                                        this.getCardWidth() :
                                         (beforeCardType.get() == type ? this.getCardWidth() / 10F : this.getCardWidth() * 0.8F);
                                 var renderX = card.isToken() ?
                                         lastTokenX.updateAndGet(x -> x + deltaX) :
