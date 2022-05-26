@@ -91,6 +91,7 @@ public class Main extends PApplet {
             );
 
             attachList.forEach(attach -> game.attach(attach.getMain(), attach.getSub()));
+            this.setCardGeometries();
 
             System.out.println("Game was initialized.");
 
@@ -216,8 +217,6 @@ public class Main extends PApplet {
         }
         this.popStyle();
 
-        this.setCardGeometries();
-
         this.pushStyle();
         this.cardGeometries.forEach(i ->
                 this.renderCard(i.card, i.geometry.x, i.geometry.y,
@@ -320,6 +319,7 @@ public class Main extends PApplet {
                 this.getNextButtonY() < y &&
                 y < this.getNextButtonY() + this.getNextButtonHeight()) {
             Game.getInstance().toNext();
+            this.setCardGeometries();
         }
 
         var cardListCopy = new ArrayList<>(this.cardGeometries);
