@@ -63,6 +63,9 @@ public class Game {
         return this.attachList.stream().anyMatch(attach -> attach.sub() == sub);
     }
 
+    public void toNext() {
+    }
+
     public static record Attach(RealCard main, RealCard sub) {
     }
 }

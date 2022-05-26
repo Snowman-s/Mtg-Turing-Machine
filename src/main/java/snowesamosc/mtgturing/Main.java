@@ -103,6 +103,7 @@ public class Main extends PApplet {
         var prop = Property.getInstance();
 
         this.background(0);
+
         if (!this.loadEnded.get()) {
             this.pushStyle();
             this.noFill();
@@ -198,6 +199,19 @@ public class Main extends PApplet {
                 this.text(textBuilder.toString(), 0, offsetY.get(),
                         this.getOpPanelWidth(), this.height - offsetY.get());
             }
+            this.popStyle();
+        }
+        //NextButton
+        {
+            var h = this.getNextButtonHeight();
+            var y = this.getNextButtonY();
+            this.pushStyle();
+            this.textFont(this.cardTextFont);
+            this.rect(0, y, this.getOpPanelWidth(), h);
+            this.textSize(h * 0.8F);
+            this.fill(255);
+            this.textAlign(CENTER, CENTER);
+            this.text("▶", 0, y, this.getOpPanelWidth(), h);
             this.popStyle();
         }
         this.popStyle();
@@ -299,13 +313,22 @@ public class Main extends PApplet {
 
     @Override
     public void mouseClicked(MouseEvent event) {
+        var x = this.mouseX;
+        var y = this.mouseY;
+
+        if (0 < x && x < this.getOpPanelWidth() &&
+                this.getNextButtonY() < y &&
+                y < this.getNextButtonY() + this.getNextButtonHeight()) {
+            Game.getInstance().toNext();
+        }
+
         var cardListCopy = new ArrayList<>(this.cardGeometries);
         Collections.reverse(cardListCopy);
         var optional = cardListCopy.stream()
-                .filter(cardGeometry -> cardGeometry.geometry.x < this.mouseX &&
-                        this.mouseX < cardGeometry.geometry.x + cardGeometry.geometry.width &&
-                        cardGeometry.geometry.y < this.mouseY &&
-                        this.mouseY < cardGeometry.geometry.y + cardGeometry.geometry.height)
+                .filter(cardGeometry -> cardGeometry.geometry.x < x &&
+                        x < cardGeometry.geometry.x + cardGeometry.geometry.width &&
+                        cardGeometry.geometry.y < y &&
+                        y < cardGeometry.geometry.y + cardGeometry.geometry.height)
                 .findFirst()
                 .map(CardGeometry::card);
         if (optional.isEmpty()) {
@@ -329,6 +352,14 @@ public class Main extends PApplet {
 
     private float getOpPanelWidth() {
         return this.width / 8F;
+    }
+
+    private float getNextButtonHeight() {
+        return this.height / 10F;
+    }
+
+    private float getNextButtonY() {
+        return this.height - this.getNextButtonHeight();
     }
 
     private void renderCard(RealCard card, float x, float y, float width, float height, boolean ignoreTapped) {
