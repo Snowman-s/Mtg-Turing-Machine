@@ -1,6 +1,7 @@
 package snowesamosc.mtgturing.cards.cardtexts;
 
 import kotlin.Pair;
+import snowesamosc.mtgturing.ContinuousEffect;
 import snowesamosc.mtgturing.cards.CardColor;
 import snowesamosc.mtgturing.cards.CreatureType;
 
@@ -18,6 +19,10 @@ public class CardText {
     }
 
     public Optional<CreatureType> getSelectedType() {
+        return Optional.empty();
+    }
+
+    public Optional<ContinuousEffect> getStaticEffect() {
         return Optional.empty();
     }
 }

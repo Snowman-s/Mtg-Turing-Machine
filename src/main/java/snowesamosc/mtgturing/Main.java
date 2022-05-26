@@ -189,9 +189,9 @@ public class Main extends PApplet {
                 );
                 if (this.selectedCard.getCardTypes().contains(CardType.Creature)) {
                     textBuilder
-                            .append(this.selectedCard.getPower())
+                            .append(game.getPT(this.selectedCard).component1())
                             .append("/")
-                            .append(this.selectedCard.getToughness())
+                            .append(game.getPT(this.selectedCard).component2())
                             .append("\n");
                 }
                 textBuilder.append("\n");
