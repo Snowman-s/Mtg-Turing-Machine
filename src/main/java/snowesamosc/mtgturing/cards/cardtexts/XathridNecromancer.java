@@ -2,23 +2,23 @@ package snowesamosc.mtgturing.cards.cardtexts;
 
 import kotlin.Pair;
 import snowesamosc.mtgturing.cards.CardColor;
-import snowesamosc.mtgturing.cards.CreatureType;
+import snowesamosc.mtgturing.cards.CardSubType;
 
 import java.util.List;
 
 public class XathridNecromancer extends CardText {
-    private final CreatureType originalDieType = CreatureType.Human;
+    private final CardSubType originalDieType = CardSubType.Human;
     private final CardColor originalCreateColor = CardColor.Black;
-    private final CreatureType originalCreateType = CreatureType.Zombie;
-    private CreatureType dieType = CreatureType.Human;
+    private final CardSubType originalCreateType = CardSubType.Zombie;
+    private CardSubType dieType = CardSubType.Human;
     private CardColor createColor = CardColor.Black;
-    private CreatureType createType = CreatureType.Zombie;
+    private CardSubType createType = CardSubType.Zombie;
 
-    public CreatureType getOriginalDieType() {
+    public CardSubType getOriginalDieType() {
         return this.originalDieType;
     }
 
-    public void setDieType(CreatureType dieType) {
+    public void setDieType(CardSubType dieType) {
         this.dieType = dieType;
     }
 
@@ -30,16 +30,16 @@ public class XathridNecromancer extends CardText {
         this.createColor = createColor;
     }
 
-    public CreatureType getOriginalCreateType() {
+    public CardSubType getOriginalCreateType() {
         return this.originalCreateType;
     }
 
-    public void setCreateType(CreatureType createType) {
+    public void setCreateType(CardSubType createType) {
         this.createType = createType;
     }
 
     @Override
-    public List<Pair<CreatureType, CreatureType>> getReplaceTypes() {
+    public List<Pair<CardSubType, CardSubType>> getReplaceTypes() {
         return List.of(
                 new Pair<>(this.originalDieType, this.dieType),
                 new Pair<>(this.originalCreateType, this.createType)

@@ -1,6 +1,6 @@
 package snowesamosc.mtgturing.cards;
 
-public enum CreatureType {
+public enum CardSubType {
     AssemblyWorker,
     Incarnation,
     Lhurgoyf,

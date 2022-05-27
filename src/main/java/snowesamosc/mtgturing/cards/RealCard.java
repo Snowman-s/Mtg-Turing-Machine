@@ -13,8 +13,8 @@ public class RealCard {
     private final Set<CardColor> originalColors;
     private final SortedSet<CardColor> colorsAdded = new TreeSet<>();
     private final Set<CardType> originalCardTypes;
-    private final Set<CreatureType> originalCreatureTypes;
-    private final SortedSet<CreatureType> creatureTypesAdded = new TreeSet<>();
+    private final Set<CardSubType> originalCardSubTypes;
+    private final SortedSet<CardSubType> cardSubTypesAdded = new TreeSet<>();
     private final CardText cardText;
     private final CardKind cardKind;
     private final int originalPower;
@@ -24,12 +24,12 @@ public class RealCard {
     private int plus1CounterNum = 0;
 
     public RealCard(CardKind kind, Set<CardColor> originalColors, Set<CardType> originalCardTypes,
-                    Set<CreatureType> originalCreatureTypes, CardText cardText,
+                    Set<CardSubType> originalCardSubTypes, CardText cardText,
                     int power, int toughness) {
         this.cardKind = kind;
         this.originalColors = originalColors;
         this.originalCardTypes = originalCardTypes;
-        this.originalCreatureTypes = originalCreatureTypes;
+        this.originalCardSubTypes = originalCardSubTypes;
         this.cardText = cardText;
         this.originalPower = power;
         this.originalToughness = toughness;
@@ -67,7 +67,7 @@ public class RealCard {
 
         var elm = map.get(kind);
 
-        return new RealCard(kind, elm.colors(), elm.types(), elm.creatureTypes(), text, elm.power, elm.toughness);
+        return new RealCard(kind, elm.colors(), elm.types(), elm.cardSubTypes(), text, elm.power, elm.toughness);
     }
 
     public static List<RealCard> createCards(List<CardKind> cardTypes, EnumMap<CardKind, CardCreateData> map) {
@@ -88,8 +88,8 @@ public class RealCard {
         return this.originalCardTypes;
     }
 
-    public Set<CreatureType> getOriginalCreatureTypes() {
-        return this.originalCreatureTypes;
+    public Set<CardSubType> getOriginalSubTypes() {
+        return this.originalCardSubTypes;
     }
 
     public CardText getText() {
@@ -138,13 +138,13 @@ public class RealCard {
         this.phaseIn = phaseIn;
     }
 
-    public void addCreatureType(Set<CreatureType> creatureTypes) {
-        this.creatureTypesAdded.addAll(creatureTypes);
+    public void addSubType(Set<CardSubType> cardSubTypes) {
+        this.cardSubTypesAdded.addAll(cardSubTypes);
     }
 
-    public SortedSet<CreatureType> getCreatureTypes() {
-        var tmp = new TreeSet<>(this.getOriginalCreatureTypes());
-        tmp.addAll(this.creatureTypesAdded);
+    public SortedSet<CardSubType> getSubTypes() {
+        var tmp = new TreeSet<>(this.getOriginalSubTypes());
+        tmp.addAll(this.cardSubTypesAdded);
         return tmp;
     }
 
@@ -188,7 +188,7 @@ public class RealCard {
     }
 
     public record CardCreateData(Set<CardColor> colors, Set<CardType> types,
-                                 Set<CreatureType> creatureTypes, int power, int toughness) {
+                                 Set<CardSubType> cardSubTypes, int power, int toughness) {
 
     }
 }

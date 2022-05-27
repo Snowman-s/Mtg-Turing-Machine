@@ -1,8 +1,8 @@
 package snowesamosc.mtgturing;
 
 import snowesamosc.mtgturing.cards.CardColor;
+import snowesamosc.mtgturing.cards.CardSubType;
 import snowesamosc.mtgturing.cards.CardType;
-import snowesamosc.mtgturing.cards.CreatureType;
 
 public class Property {
     private static final Property instance = new Property();
@@ -37,7 +37,7 @@ public class Property {
         };
     }
 
-    public String translate(CreatureType type) {
+    public String translate(CardSubType type) {
         return switch (this.language) {
             case "Japanese" -> switch (type) {
                 case Aetherborn -> "霊気体";

@@ -3,7 +3,7 @@ package snowesamosc.mtgturing.cards.cardtexts;
 import kotlin.Pair;
 import snowesamosc.mtgturing.ContinuousEffect;
 import snowesamosc.mtgturing.cards.CardColor;
-import snowesamosc.mtgturing.cards.CreatureType;
+import snowesamosc.mtgturing.cards.CardSubType;
 import snowesamosc.mtgturing.cards.RealCard;
 
 import java.util.Collections;
@@ -13,7 +13,7 @@ import java.util.Optional;
 public class CardText {
     private RealCard owner;
 
-    public List<Pair<CreatureType, CreatureType>> getReplaceTypes() {
+    public List<Pair<CardSubType, CardSubType>> getReplaceTypes() {
         return Collections.emptyList();
     }
 
@@ -21,7 +21,7 @@ public class CardText {
         return Collections.emptyList();
     }
 
-    public Optional<CreatureType> getSelectedType() {
+    public Optional<CardSubType> getSelectedType() {
         return Optional.empty();
     }
 

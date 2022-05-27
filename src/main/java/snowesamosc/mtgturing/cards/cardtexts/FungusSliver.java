@@ -1,24 +1,24 @@
 package snowesamosc.mtgturing.cards.cardtexts;
 
 import kotlin.Pair;
-import snowesamosc.mtgturing.cards.CreatureType;
+import snowesamosc.mtgturing.cards.CardSubType;
 
 import java.util.List;
 
 public class FungusSliver extends CardText {
-    private final CreatureType originalPlusType = CreatureType.Sliver;
-    private CreatureType plusType = CreatureType.Sliver;
+    private final CardSubType originalPlusType = CardSubType.Sliver;
+    private CardSubType plusType = CardSubType.Sliver;
 
-    public void setPlusType(CreatureType plusType) {
+    public void setPlusType(CardSubType plusType) {
         this.plusType = plusType;
     }
 
-    public CreatureType getOriginalPlusType() {
+    public CardSubType getOriginalPlusType() {
         return this.originalPlusType;
     }
 
     @Override
-    public List<Pair<CreatureType, CreatureType>> getReplaceTypes() {
+    public List<Pair<CardSubType, CardSubType>> getReplaceTypes() {
         return List.of(new Pair<>(this.originalPlusType, this.plusType));
     }
 }

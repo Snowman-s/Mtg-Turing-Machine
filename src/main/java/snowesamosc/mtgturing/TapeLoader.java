@@ -1,6 +1,6 @@
 package snowesamosc.mtgturing;
 
-import snowesamosc.mtgturing.cards.CreatureType;
+import snowesamosc.mtgturing.cards.CardSubType;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,13 +13,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class TapeLoader {
-    private static final List<CreatureType> tapeCreatureTypeList = List.of(
-            CreatureType.Aetherborn, CreatureType.Basilisk, CreatureType.Demon,
-            CreatureType.Cephalid, CreatureType.Elf, CreatureType.Faerie,
-            CreatureType.Giant, CreatureType.Illusion, CreatureType.Harpy,
-            CreatureType.Juggernaut, CreatureType.Kavu, CreatureType.Leviathan,
-            CreatureType.Myr, CreatureType.Noggle, CreatureType.Pegasus,
-            CreatureType.Orc, CreatureType.Rhino, CreatureType.Sliver
+    private static final List<CardSubType> TAPE_CARD_SUB_TYPE_LIST = List.of(
+            CardSubType.Aetherborn, CardSubType.Basilisk, CardSubType.Demon,
+            CardSubType.Cephalid, CardSubType.Elf, CardSubType.Faerie,
+            CardSubType.Giant, CardSubType.Illusion, CardSubType.Harpy,
+            CardSubType.Juggernaut, CardSubType.Kavu, CardSubType.Leviathan,
+            CardSubType.Myr, CardSubType.Noggle, CardSubType.Pegasus,
+            CardSubType.Orc, CardSubType.Rhino, CardSubType.Sliver
     );
 
     private TapeLoader() {
@@ -35,28 +35,28 @@ public class TapeLoader {
         return dir.resolve("tape.txt");
     }
 
-    private static List<CreatureType> createRandomTape() {
+    private static List<CardSubType> createRandomTape() {
         int tapeLength = 3 + ThreadLocalRandom.current().nextInt(5);
 
-        Stream.Builder<CreatureType> bulider = Stream.builder();
+        Stream.Builder<CardSubType> bulider = Stream.builder();
 
         for (int i = 0; i < tapeLength; i++) {
-            bulider.add(tapeCreatureTypeList.get(ThreadLocalRandom.current().nextInt(tapeCreatureTypeList.size())));
+            bulider.add(TAPE_CARD_SUB_TYPE_LIST.get(ThreadLocalRandom.current().nextInt(TAPE_CARD_SUB_TYPE_LIST.size())));
         }
 
         return bulider.build().collect(Collectors.toList());
     }
 
-    public static List<CreatureType> loadTape() {
+    public static List<CardSubType> loadTape() {
         try {
             var saveFile = getSaveDirectory();
 
             if (Files.exists(saveFile)) {
                 try (var reader = Files.newBufferedReader(saveFile)) {
-                    var ret = new ArrayList<CreatureType>();
+                    var ret = new ArrayList<CardSubType>();
                     String line = reader.readLine();
                     line.codePoints().forEach(codePoint -> {
-                        Optional<CreatureType> type = tapeCreatureTypeList.stream()
+                        Optional<CardSubType> type = TAPE_CARD_SUB_TYPE_LIST.stream()
                                 .filter(c -> c.name().codePointAt(0) == codePoint)
                                 .findAny();
                         type.ifPresent(ret::add);

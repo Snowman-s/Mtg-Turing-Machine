@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 public class Main extends PApplet {
     private final AtomicBoolean loadEnded = new AtomicBoolean(false);
-    private List<CreatureType> tape;
+    private List<CardSubType> tape;
     private EnumMap<CardKind, CardLoader.CardInfo<PImage>> cardInfos = new EnumMap<>(CardKind.class);
     private PImage tokenImage = null;
     private RealCard selectedCard = null;
@@ -78,7 +78,7 @@ public class Main extends PApplet {
             var createCardMap = new EnumMap<CardKind, RealCard.CardCreateData>(CardKind.class);
             this.cardInfos.forEach((key1, value) ->
                     createCardMap.put(key1,
-                            new RealCard.CardCreateData(value.colors(), value.types(), value.creatureTypes(),
+                            new RealCard.CardCreateData(value.colors(), value.types(), value.cardSubTypes(),
                                     value.power(), value.toughness()
                             )
                     )
@@ -178,8 +178,8 @@ public class Main extends PApplet {
                         .collect(Collectors.joining())
                 ).append("\n");
 
-                if (!this.selectedCard.getCreatureTypes().isEmpty()) {
-                    textBuilder.append(this.selectedCard.getCreatureTypes().stream()
+                if (!this.selectedCard.getSubTypes().isEmpty()) {
+                    textBuilder.append(this.selectedCard.getSubTypes().stream()
                             .map(prop::translate)
                             .collect(Collectors.joining(" "))
                     ).append("\n");
@@ -414,7 +414,7 @@ public class Main extends PApplet {
         fields.add(RealCard.createCard(CardKind.WheelOfSunAndMoon, map));
         {
             var illusory = RealCard.createCard(CardKind.IllusoryGains, map);
-            var token = new CreatureToken(CardColor.Green, CreatureType.Cephalid, 3, 3);
+            var token = new CreatureToken(CardColor.Green, CardSubType.Cephalid, 3, 3);
             var attach = new AttachInfo(token);
             attach.setSub(illusory);
             attachList.add(attach);
@@ -423,7 +423,7 @@ public class Main extends PApplet {
         }
         {
             RealCard card = RealCard.createCard(CardKind.SteelyResolve, map);
-            card.asThatCardText(SteelyResolve.class, c -> c.setSelectedType(CreatureType.AssemblyWorker));
+            card.asThatCardText(SteelyResolve.class, c -> c.setSelectedType(CardSubType.AssemblyWorker));
             fields.add(card);
         }
         for (int i = 0; i < 2; i++) {
@@ -433,15 +433,15 @@ public class Main extends PApplet {
         }
         {
             RealCard card = RealCard.createCard(CardKind.FungusSliver, map);
-            card.asThatCardText(FungusSliver.class, c -> c.setPlusType(CreatureType.Incarnation));
+            card.asThatCardText(FungusSliver.class, c -> c.setPlusType(CardSubType.Incarnation));
             fields.add(card);
         }
         {
             RealCard card = RealCard.createCard(CardKind.RotlungReanimator, map);
             card.asThatCardText(RoutingReanimator.class, c -> {
-                c.setDieType(CreatureType.Lhurgoyf);
+                c.setDieType(CardSubType.Lhurgoyf);
                 c.setCreateColor(CardColor.Black);
-                c.setCreateType(CreatureType.Cephalid);
+                c.setCreateType(CardSubType.Cephalid);
             });
             card.addColors(Set.of(CardColor.Green, CardColor.White, CardColor.Red));
             card.putPlusOrMinus1Counter(3);
@@ -449,15 +449,15 @@ public class Main extends PApplet {
         }
         {
             RealCard card = RealCard.createCard(CardKind.SharedTriumph, map);
-            card.asThatCardText(SharedTriumph.class, c -> c.setSelectedType(CreatureType.Lhurgoyf));
+            card.asThatCardText(SharedTriumph.class, c -> c.setSelectedType(CardSubType.Lhurgoyf));
             fields.add(card);
         }
         {
             RealCard card = RealCard.createCard(CardKind.RotlungReanimator, map);
             card.asThatCardText(RoutingReanimator.class, c -> {
-                c.setDieType(CreatureType.Rat);
+                c.setDieType(CardSubType.Rat);
                 c.setCreateColor(CardColor.Black);
-                c.setCreateType(CreatureType.Cephalid);
+                c.setCreateType(CardSubType.Cephalid);
             });
             card.addColors(Set.of(CardColor.Green, CardColor.White, CardColor.Red));
             card.putPlusOrMinus1Counter(3);
@@ -465,7 +465,7 @@ public class Main extends PApplet {
         }
         {
             RealCard card = RealCard.createCard(CardKind.SharedTriumph, map);
-            card.asThatCardText(SharedTriumph.class, c -> c.setSelectedType(CreatureType.Rat));
+            card.asThatCardText(SharedTriumph.class, c -> c.setSelectedType(CardSubType.Rat));
             fields.add(card);
         }
 
@@ -481,7 +481,7 @@ public class Main extends PApplet {
         fields.stream()
                 .filter(card -> !card.isToken())
                 .filter(card -> card.getCardTypes().contains(CardType.Creature))
-                .forEach(card -> card.addCreatureType(Set.of(CreatureType.AssemblyWorker)));
+                .forEach(card -> card.addSubType(Set.of(CardSubType.AssemblyWorker)));
 
         return new Player(RealCard.createCards(List.of(
                 CardKind.CleansingBeam,
@@ -519,9 +519,9 @@ public class Main extends PApplet {
         {
             RealCard card = RealCard.createCard(CardKind.RotlungReanimator, map);
             card.asThatCardText(RoutingReanimator.class, c -> {
-                c.setDieType(CreatureType.Lhurgoyf);
+                c.setDieType(CardSubType.Lhurgoyf);
                 c.setCreateColor(CardColor.Green);
-                c.setCreateType(CreatureType.Lhurgoyf);
+                c.setCreateType(CardSubType.Lhurgoyf);
             });
             card.addColors(Set.of(CardColor.Green, CardColor.White, CardColor.Red));
             card.putPlusOrMinus1Counter(3);
@@ -530,9 +530,9 @@ public class Main extends PApplet {
         {
             RealCard card = RealCard.createCard(CardKind.RotlungReanimator, map);
             card.asThatCardText(RoutingReanimator.class, c -> {
-                c.setDieType(CreatureType.Rat);
+                c.setDieType(CardSubType.Rat);
                 c.setCreateColor(CardColor.White);
-                c.setCreateType(CreatureType.Rat);
+                c.setCreateType(CardSubType.Rat);
             });
             card.addColors(Set.of(CardColor.Green, CardColor.White, CardColor.Red));
             card.putPlusOrMinus1Counter(3);
