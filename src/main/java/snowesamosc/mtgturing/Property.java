@@ -84,4 +84,31 @@ public class Property {
             default -> type.name();
         };
     }
+
+    public String abilitiesString(boolean isHexproof, boolean isShroud, boolean isPhasing) {
+        var ability = new StringBuilder();
+        if (isHexproof) {
+            ability.append(switch (this.language) {
+                case "Japanese" -> "呪禁";
+                default -> "Hexproof";
+            }).append(", ");
+        }
+        if (isShroud) {
+            ability.append(switch (this.language) {
+                case "Japanese" -> "被覆";
+                default -> "Shroud";
+            }).append(", ");
+        }
+        if (isPhasing) {
+            ability.append(switch (this.language) {
+                case "Japanese" -> "フェイジング";
+                default -> "Phasing";
+            }).append(", ");
+        }
+
+        var ret = ability.toString();
+
+        //足しすぎた文字の削除
+        return ret.isEmpty() ? "" : ret.substring(0, ret.length() - 2);
+    }
 }

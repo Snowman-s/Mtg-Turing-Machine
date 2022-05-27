@@ -1,6 +1,8 @@
 package snowesamosc.mtgturing.cards;
 
 import snowesamosc.mtgturing.CardKind;
+import snowesamosc.mtgturing.Game;
+import snowesamosc.mtgturing.Player;
 import snowesamosc.mtgturing.cards.cardtexts.*;
 
 import java.util.*;
@@ -31,6 +33,8 @@ public class RealCard {
         this.cardText = cardText;
         this.originalPower = power;
         this.originalToughness = toughness;
+
+        cardText.setOwner(this);
     }
 
     public static RealCard createCard(CardKind kind, EnumMap<CardKind, CardCreateData> map) {
@@ -155,7 +159,7 @@ public class RealCard {
     }
 
     public int getPower() {
-        return this.originalPower + this.plus1CounterNum;
+        return this.originalPower;
     }
 
     public int getOriginalToughness() {
@@ -163,7 +167,7 @@ public class RealCard {
     }
 
     public int getToughness() {
-        return this.originalToughness + this.plus1CounterNum;
+        return this.originalToughness;
     }
 
     public void putPlusOrMinus1Counter(int counterNum) {
@@ -172,6 +176,15 @@ public class RealCard {
 
     public int getPlusOrMinus1CounterNum() {
         return this.plus1CounterNum;
+    }
+
+    public Optional<Player> getController() {
+        var g = Game.getInstance();
+
+        if (g.getBob().field().stream().anyMatch(card -> card == this)) return Optional.of(g.getBob());
+        if (g.getAlice().field().stream().anyMatch(card -> card == this)) return Optional.of(g.getAlice());
+
+        return Optional.empty();
     }
 
     public record CardCreateData(Set<CardColor> colors, Set<CardType> types,

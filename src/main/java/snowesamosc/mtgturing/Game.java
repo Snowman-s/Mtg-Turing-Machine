@@ -1,6 +1,7 @@
 package snowesamosc.mtgturing;
 
 import kotlin.Pair;
+import snowesamosc.mtgturing.cards.CardType;
 import snowesamosc.mtgturing.cards.RealCard;
 
 import java.util.*;
@@ -10,6 +11,9 @@ import java.util.function.Consumer;
 public class Game {
     private static final Game instance = new Game();
     private final Map<RealCard, List<Pair<Integer, Integer>>> ptAddersFromStaticAbility = new HashMap<>();
+    private final Set<RealCard> hexproofFromStaticAbility = new HashSet<>();
+    private final Set<RealCard> shroudFromStaticAbility = new HashSet<>();
+    private final Set<RealCard> phasingFromStaticAbility = new HashSet<>();
     private final List<Attach> attachList = new ArrayList<>();
     private Player bob;
     private Player alice;
@@ -28,12 +32,32 @@ public class Game {
     private void checkStaticAbility() {
         List<ContinuousEffect> effectFromStaticAbility = new ArrayList<>();
 
-        this.bob.field()
+        this.bob.field().stream()
+                .filter(RealCard::isPhaseIn)
                 .forEach(card -> card.getText().getStaticEffect().ifPresent(effectFromStaticAbility::add));
-        this.alice.field()
+        this.alice.field().stream()
+                .filter(RealCard::isPhaseIn)
                 .forEach(card -> card.getText().getStaticEffect().ifPresent(effectFromStaticAbility::add));
 
+        //カウンター
+        effectFromStaticAbility.add(this.createEffectForPlusOrMinusPTCounter());
+
         this.ptAddersFromStaticAbility.clear();
+        this.hexproofFromStaticAbility.clear();
+        this.shroudFromStaticAbility.clear();
+        this.phasingFromStaticAbility.clear();
+
+        effectFromStaticAbility.stream()
+                .map(ContinuousEffect::getHexproofCard)
+                .forEach(this.hexproofFromStaticAbility::addAll);
+
+        effectFromStaticAbility.stream()
+                .map(ContinuousEffect::getShroudCard)
+                .forEach(this.shroudFromStaticAbility::addAll);
+
+        effectFromStaticAbility.stream()
+                .map(ContinuousEffect::getPhasingCard)
+                .forEach(this.phasingFromStaticAbility::addAll);
 
         effectFromStaticAbility.stream()
                 .map(ContinuousEffect::addPT)
@@ -78,8 +102,12 @@ public class Game {
         this.attachList.add(new Attach(main, sub));
     }
 
-    public Optional<RealCard> attachedCard(RealCard main) {
+    public Optional<RealCard> attachingCard(RealCard main) {
         return this.attachList.stream().filter(attach -> attach.main() == main).findAny().map(Attach::sub);
+    }
+
+    public Optional<RealCard> attachedCard(RealCard sub) {
+        return this.attachList.stream().filter(attach -> attach.sub() == sub).findAny().map(Attach::main);
     }
 
     public boolean isAttachSub(RealCard sub) {
@@ -115,6 +143,37 @@ public class Game {
                 .forEach(ret::add);
 
         return ret;
+    }
+
+    public ContinuousEffect createEffectForPlusOrMinusPTCounter() {
+        return new ContinuousEffectAdapter() {
+            @Override
+            public Map<RealCard, Pair<Integer, Integer>> addPT() {
+                Map<RealCard, Pair<Integer, Integer>> ret = new HashMap<>();
+
+                Game.getInstance().getFieldCardsExceptPhaseOut()
+                        .stream()
+                        .filter(card -> card.getCardTypes().contains(CardType.Creature))
+                        .filter(card -> card.getPlusOrMinus1CounterNum() != 0)
+                        .forEach(card -> ret.put(card,
+                                new Pair<>(card.getPlusOrMinus1CounterNum(), card.getPlusOrMinus1CounterNum()))
+                        );
+
+                return ret;
+            }
+        };
+    }
+
+    public boolean isHexProof(RealCard card) {
+        return this.hexproofFromStaticAbility.contains(card);
+    }
+
+    public boolean isShroud(RealCard card) {
+        return this.shroudFromStaticAbility.contains(card);
+    }
+
+    public boolean isPhasing(RealCard card) {
+        return this.phasingFromStaticAbility.contains(card);
     }
 
     public static record Attach(RealCard main, RealCard sub) {

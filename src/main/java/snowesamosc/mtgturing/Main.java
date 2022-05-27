@@ -84,13 +84,17 @@ public class Main extends PApplet {
                     )
             );
 
+            var bob = this.createBob(attachList, createCardMap);
+            var alice = this.createAlice(attachList, createCardMap);
+
+            attachList.forEach(attach -> game.attach(attach.getMain(), attach.getSub()));
+
             game.init(
-                    this.createBob(attachList, createCardMap),
-                    this.createAlice(attachList, createCardMap),
+                    bob,
+                    alice,
                     System.out::println
             );
 
-            attachList.forEach(attach -> game.attach(attach.getMain(), attach.getSub()));
             this.setCardGeometries();
 
             System.out.println("Game was initialized.");
@@ -146,6 +150,13 @@ public class Main extends PApplet {
                     name = cardInfo.cardName();
                     text = cardInfo.cardText();
                 }
+
+                var abilityString = Property.getInstance().abilitiesString(
+                        game.isHexProof(this.selectedCard),
+                        game.isShroud(this.selectedCard),
+                        game.isPhasing(this.selectedCard)
+                );
+                if (!abilityString.isEmpty()) text = abilityString + "\n" + text;
             }
 
             this.fill(255);
@@ -252,7 +263,7 @@ public class Main extends PApplet {
                                         lastTokenX.updateAndGet(x -> x + deltaX) :
                                         lastNormalX.updateAndGet(x -> x + deltaX);
                                 var renderY = card.isToken() ? this.height / 5F : 0;
-                                game.attachedCard(card).ifPresent(sub -> this.cardGeometries.add(new CardGeometry(sub,
+                                game.attachingCard(card).ifPresent(sub -> this.cardGeometries.add(new CardGeometry(sub,
                                         new Rectangle2D.Float(renderX, renderY + this.getCardHeight() / 10F, this.getCardWidth(), this.getCardHeight()))));
                                 if (!card.isTapped()) {
                                     this.cardGeometries.add(new CardGeometry(card,
@@ -295,7 +306,7 @@ public class Main extends PApplet {
                                         lastTokenX.updateAndGet(x -> x + deltaX) :
                                         lastNormalX.updateAndGet(x -> x + deltaX);
                                 var renderY = card.isToken() ? this.height * 2 / 5 : this.height * 3 / 5;
-                                game.attachedCard(card).ifPresent(sub -> this.cardGeometries.add(new CardGeometry(sub,
+                                game.attachingCard(card).ifPresent(sub -> this.cardGeometries.add(new CardGeometry(sub,
                                         new Rectangle2D.Float(renderX, renderY + this.getCardHeight() / 10F, this.getCardWidth(), this.getCardHeight()))));
                                 if (!card.isTapped()) {
                                     this.cardGeometries.add(new CardGeometry(card,
