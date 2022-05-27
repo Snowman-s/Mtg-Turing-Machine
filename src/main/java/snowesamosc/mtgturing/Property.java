@@ -66,6 +66,12 @@ public class Property {
                 case Cleric -> "クレリック";
                 case Zombie -> "ゾンビ";
                 case Human -> "人間";
+
+                case Plains -> "平地";
+                case Island -> "島";
+                case Swamp -> "沼";
+                case Mountain -> "山";
+                case Forest -> "森";
             };
             default -> type.name();
         };

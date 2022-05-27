@@ -26,5 +26,11 @@ public enum CardSubType {
     Assassin,
     Cleric,
     Zombie,
-    Human
+    Human,
+
+    Plains,
+    Island,
+    Swamp,
+    Mountain,
+    Forest
 }

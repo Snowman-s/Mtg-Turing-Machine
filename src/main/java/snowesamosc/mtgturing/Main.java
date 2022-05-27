@@ -178,8 +178,9 @@ public class Main extends PApplet {
                         .collect(Collectors.joining())
                 ).append("\n");
 
-                if (!this.selectedCard.getSubTypes().isEmpty()) {
-                    textBuilder.append(this.selectedCard.getSubTypes().stream()
+                var subTypes = game.getSubType(this.selectedCard);
+                if (!subTypes.isEmpty()) {
+                    textBuilder.append(subTypes.stream()
                             .map(prop::translate)
                             .collect(Collectors.joining(" "))
                     ).append("\n");

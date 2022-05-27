@@ -1,6 +1,7 @@
 package snowesamosc.mtgturing;
 
 import kotlin.Pair;
+import snowesamosc.mtgturing.cards.CardSubType;
 import snowesamosc.mtgturing.cards.RealCard;
 
 import java.util.Map;
@@ -14,4 +15,6 @@ public interface ContinuousEffect {
     Set<RealCard> getHexproofCard();
 
     Set<RealCard> getPhasingCard();
+
+    Map<RealCard, Set<CardSubType>> addSubType();
 }

@@ -1,6 +1,7 @@
 package snowesamosc.mtgturing;
 
 import kotlin.Pair;
+import snowesamosc.mtgturing.cards.CardSubType;
 import snowesamosc.mtgturing.cards.RealCard;
 
 import java.util.Collections;
@@ -26,5 +27,10 @@ public class ContinuousEffectAdapter implements ContinuousEffect {
     @Override
     public Set<RealCard> getPhasingCard() {
         return Collections.emptySet();
+    }
+
+    @Override
+    public Map<RealCard, Set<CardSubType>> addSubType() {
+        return Collections.emptyMap();
     }
 }

@@ -1,6 +1,7 @@
 package snowesamosc.mtgturing;
 
 import kotlin.Pair;
+import snowesamosc.mtgturing.cards.CardSubType;
 import snowesamosc.mtgturing.cards.CardType;
 import snowesamosc.mtgturing.cards.RealCard;
 
@@ -11,6 +12,7 @@ import java.util.function.Consumer;
 public class Game {
     private static final Game instance = new Game();
     private final Map<RealCard, List<Pair<Integer, Integer>>> ptAddersFromStaticAbility = new HashMap<>();
+    private final Map<RealCard, SortedSet<CardSubType>> subtypeAddersFromStaticAbility = new HashMap<>();
     private final Set<RealCard> hexproofFromStaticAbility = new HashSet<>();
     private final Set<RealCard> shroudFromStaticAbility = new HashSet<>();
     private final Set<RealCard> phasingFromStaticAbility = new HashSet<>();
@@ -43,9 +45,20 @@ public class Game {
         effectFromStaticAbility.add(this.createEffectForPlusOrMinusPTCounter());
 
         this.ptAddersFromStaticAbility.clear();
+        this.subtypeAddersFromStaticAbility.clear();
         this.hexproofFromStaticAbility.clear();
         this.shroudFromStaticAbility.clear();
         this.phasingFromStaticAbility.clear();
+
+        effectFromStaticAbility.stream()
+                .map(ContinuousEffect::addSubType)
+                .forEach(
+                        map -> map.forEach((key, value) -> {
+                            if (!this.subtypeAddersFromStaticAbility.containsKey(key))
+                                this.subtypeAddersFromStaticAbility.put(key, new TreeSet<>());
+                            this.subtypeAddersFromStaticAbility.get(key).addAll(value);
+                        })
+                );
 
         effectFromStaticAbility.stream()
                 .map(ContinuousEffect::getHexproofCard)
@@ -130,6 +143,14 @@ public class Game {
         });
 
         return new Pair<>(p.get(), t.get());
+    }
+
+    public Set<CardSubType> getSubType(RealCard card) {
+        var subTypeModifierList = this.subtypeAddersFromStaticAbility
+                .getOrDefault(card, Collections.emptySortedSet());
+        var ret = new HashSet<>(card.getSubTypes());
+        ret.addAll(subTypeModifierList);
+        return ret;
     }
 
     public List<RealCard> getFieldCardsExceptPhaseOut() {
