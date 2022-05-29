@@ -20,7 +20,7 @@ public class RealCard {
     private final int originalPower;
     private final int originalToughness;
     private boolean tapped = false;
-    private boolean phaseIn = true;
+    private PhaseType phaseIn = PhaseType.PhaseIn;
     private int plus1CounterNum = 0;
 
     public RealCard(CardKind kind, Set<CardColor> originalColors, Set<CardType> originalCardTypes,
@@ -126,15 +126,21 @@ public class RealCard {
         return this.tapped;
     }
 
-    public void reversePhasing() {
-        this.phaseIn = !this.phaseIn;
+    public void reversePhasingOnUntapPhase() {
+        if (this.phaseIn == PhaseType.DirectlyPhaseOut) {
+            this.phaseIn = PhaseType.PhaseIn;
+        } else if (this.phaseIn == PhaseType.PhaseIn) {
+            this.phaseIn = PhaseType.DirectlyPhaseOut;
+            Game.getInstance().attachingCard(this)
+                    .ifPresent(card -> card.setPhaseIn(PhaseType.IndirectlyPhaseOut));
+        }
     }
 
     public boolean isPhaseIn() {
-        return this.phaseIn;
+        return this.phaseIn == PhaseType.PhaseIn;
     }
 
-    public void setPhaseIn(boolean phaseIn) {
+    public void setPhaseIn(PhaseType phaseIn) {
         this.phaseIn = phaseIn;
     }
 
@@ -185,6 +191,10 @@ public class RealCard {
         if (g.getAlice().field().stream().anyMatch(card -> card == this)) return Optional.of(g.getAlice());
 
         return Optional.empty();
+    }
+
+    public enum PhaseType {
+        PhaseIn, DirectlyPhaseOut, IndirectlyPhaseOut
     }
 
     public record CardCreateData(Set<CardColor> colors, Set<CardType> types,

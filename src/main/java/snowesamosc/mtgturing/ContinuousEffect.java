@@ -16,5 +16,7 @@ public interface ContinuousEffect {
 
     Set<RealCard> getPhasingCard();
 
+    Set<RealCard> getNotUntappableOnUntapStep();
+
     Map<RealCard, Set<CardSubType>> addSubType();
 }

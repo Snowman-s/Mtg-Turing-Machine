@@ -152,9 +152,9 @@ public class Main extends PApplet {
                 }
 
                 var abilityString = Property.getInstance().abilitiesString(
-                        game.isHexProof(this.selectedCard),
-                        game.isShroud(this.selectedCard),
-                        game.isPhasing(this.selectedCard)
+                        game.hasHexProof(this.selectedCard),
+                        game.hasShroud(this.selectedCard),
+                        game.hasPhasing(this.selectedCard)
                 );
                 if (!abilityString.isEmpty()) text = abilityString + "\n" + text;
             }
@@ -409,7 +409,7 @@ public class Main extends PApplet {
         attachList.forEach(attach -> {
             var card = RealCard.createCard(CardKind.CloakOfInvisibility, map);
             attach.setSub(card);
-            card.setPhaseIn(attach.getMain().isPhaseIn());
+            card.setPhaseIn(attach.getMain().isPhaseIn() ? RealCard.PhaseType.PhaseIn : RealCard.PhaseType.IndirectlyPhaseOut);
             fields.add(card);
         });
         fields.add(RealCard.createCard(CardKind.WheelOfSunAndMoon, map));
@@ -511,7 +511,7 @@ public class Main extends PApplet {
                 c.setCreateColor(element.createColor());
                 c.setCreateType(element.createType());
             });
-            card.setPhaseIn(element.phaseIn());
+            card.setPhaseIn(element.phaseIn() ? RealCard.PhaseType.PhaseIn : RealCard.PhaseType.DirectlyPhaseOut);
             card.addColors(Set.of(CardColor.Green, CardColor.White, CardColor.Red));
             card.putPlusOrMinus1Counter(3);
             fields.add(card);

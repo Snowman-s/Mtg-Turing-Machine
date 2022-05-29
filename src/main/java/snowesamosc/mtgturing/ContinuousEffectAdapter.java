@@ -30,6 +30,11 @@ public class ContinuousEffectAdapter implements ContinuousEffect {
     }
 
     @Override
+    public Set<RealCard> getNotUntappableOnUntapStep() {
+        return Collections.emptySet();
+    }
+
+    @Override
     public Map<RealCard, Set<CardSubType>> addSubType() {
         return Collections.emptyMap();
     }

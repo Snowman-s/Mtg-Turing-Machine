@@ -16,11 +16,12 @@ public class Game {
     private final Set<RealCard> hexproofFromStaticAbility = new HashSet<>();
     private final Set<RealCard> shroudFromStaticAbility = new HashSet<>();
     private final Set<RealCard> phasingFromStaticAbility = new HashSet<>();
+    private final Set<RealCard> untappableOnUntapStepFromStaticAbility = new HashSet<>();
     private final List<Attach> attachList = new ArrayList<>();
     private Player bob;
     private Player alice;
     private Player turnPlayer;
-    private Phase phase;
+    private GameCheckpoint gameCheckpoint;
     private Consumer<String> logger;
 
     private Game() {
@@ -49,6 +50,7 @@ public class Game {
         this.hexproofFromStaticAbility.clear();
         this.shroudFromStaticAbility.clear();
         this.phasingFromStaticAbility.clear();
+        this.untappableOnUntapStepFromStaticAbility.clear();
 
         effectFromStaticAbility.stream()
                 .map(ContinuousEffect::addSubType)
@@ -81,6 +83,10 @@ public class Game {
                             this.ptAddersFromStaticAbility.get(key).add(value);
                         })
                 );
+
+        effectFromStaticAbility.stream()
+                .map(ContinuousEffect::getNotUntappableOnUntapStep)
+                .forEach(this.untappableOnUntapStepFromStaticAbility::addAll);
     }
 
     public void init(Player bob, Player alice, Consumer<String> logger) {
@@ -89,7 +95,7 @@ public class Game {
         this.logger = logger;
 
         this.turnPlayer = alice;
-        this.phase = Phase.Untap;
+        this.gameCheckpoint = GameCheckpoint.Untap;
 
         this.checkStaticAbility();
     }
@@ -106,8 +112,8 @@ public class Game {
         return this.turnPlayer;
     }
 
-    public Phase getPhase() {
-        return this.phase;
+    public GameCheckpoint getPhase() {
+        return this.gameCheckpoint;
     }
 
     public void attach(RealCard main, RealCard sub) {
@@ -128,7 +134,23 @@ public class Game {
     }
 
     public void toNext() {
+        switch (this.gameCheckpoint) {
+            case Untap -> {
+                this.onUntap();
+            }
+        }
+    }
 
+    public void onUntap() {
+        this.getTurnPlayer().field().stream()
+                .filter(card -> (!card.isPhaseIn()) || Game.getInstance().hasPhasing(card))
+                .forEach(RealCard::reversePhasingOnUntapPhase);
+        this.checkStaticAbility();
+        this.getTurnPlayer().field().stream()
+                .filter(card -> !this.untappableOnUntapStepFromStaticAbility.contains(card))
+                .forEach(RealCard::untap);
+        this.checkStaticAbility();
+        this.gameCheckpoint = GameCheckpoint.Upkeep;
     }
 
     public Pair<Integer, Integer> getPT(RealCard card) {
@@ -185,16 +207,24 @@ public class Game {
         };
     }
 
-    public boolean isHexProof(RealCard card) {
+    public boolean hasHexProof(RealCard card) {
         return this.hexproofFromStaticAbility.contains(card);
     }
 
-    public boolean isShroud(RealCard card) {
+    public boolean hasShroud(RealCard card) {
         return this.shroudFromStaticAbility.contains(card);
     }
 
-    public boolean isPhasing(RealCard card) {
+    public boolean hasPhasing(RealCard card) {
         return this.phasingFromStaticAbility.contains(card);
+    }
+
+    private enum GameCheckpoint {
+        Untap,
+        Upkeep,
+        Draw,
+        Main,
+        End
     }
 
     public static record Attach(RealCard main, RealCard sub) {
