@@ -148,20 +148,18 @@ public class Game {
         if (!this.stack.isEmpty()) {
             this.stack.pop().resolve();
             return;
-        }
-
-        switch (this.gameCheckpoint) {
-            case Untap -> this.onUntap();
-            case UpkeepStarted -> this.onUpkeepStarted();
-        }
-
-        if (this.stack.isEmpty()) {
+        } else {
             var newCheckpointIndex = Arrays.stream(GameCheckpoint.values()).toList().indexOf(this.gameCheckpoint) + 1;
             if (newCheckpointIndex > GameCheckpoint.values().length - 1) {
                 this.gameCheckpoint = GameCheckpoint.Untap;
             } else {
                 this.gameCheckpoint = GameCheckpoint.values()[newCheckpointIndex];
             }
+        }
+
+        switch (this.gameCheckpoint) {
+            case Untap -> this.onUntap();
+            case UpkeepStarted -> this.onUpkeepStarted();
         }
     }
 
