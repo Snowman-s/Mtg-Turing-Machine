@@ -130,6 +130,9 @@ public class RealCard implements OnStackObject {
     public void reversePhasingOnUntapPhase() {
         if (this.phaseIn == PhaseType.DirectlyPhaseOut) {
             this.phaseIn = PhaseType.PhaseIn;
+            Game.getInstance().attachingCard(this)
+                    .filter(card -> card.phaseIn == PhaseType.IndirectlyPhaseOut)
+                    .ifPresent(card -> card.setPhaseIn(PhaseType.PhaseIn));
         } else if (this.phaseIn == PhaseType.PhaseIn) {
             this.phaseIn = PhaseType.DirectlyPhaseOut;
             Game.getInstance().attachingCard(this)
