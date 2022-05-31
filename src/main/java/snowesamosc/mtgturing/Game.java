@@ -102,8 +102,8 @@ public class Game {
         this.alice = alice;
         this.logger = logger;
 
-        this.turnPlayer = alice;
-        this.gameCheckpoint = GameCheckpoint.Untap;
+        this.turnPlayer = bob;
+        this.gameCheckpoint = GameCheckpoint.End;
 
         this.triggeredAbility.clear();
         this.stack.clear();
@@ -152,6 +152,7 @@ public class Game {
             var newCheckpointIndex = Arrays.stream(GameCheckpoint.values()).toList().indexOf(this.gameCheckpoint) + 1;
             if (newCheckpointIndex > GameCheckpoint.values().length - 1) {
                 this.gameCheckpoint = GameCheckpoint.Untap;
+                this.turnPlayer = this.turnPlayer == this.bob ? this.alice : this.bob;
             } else {
                 this.gameCheckpoint = GameCheckpoint.values()[newCheckpointIndex];
             }
