@@ -1,6 +1,7 @@
 package snowesamosc.mtgturing;
 
 import kotlin.Pair;
+import snowesamosc.mtgturing.abilityonstack.AbilityOnStack;
 import snowesamosc.mtgturing.cards.CardSubType;
 import snowesamosc.mtgturing.cards.CardType;
 import snowesamosc.mtgturing.cards.RealCard;
@@ -8,6 +9,7 @@ import snowesamosc.mtgturing.cards.RealCard;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class Game {
     private static final Game instance = new Game();
@@ -18,6 +20,8 @@ public class Game {
     private final Set<RealCard> phasingFromStaticAbility = new HashSet<>();
     private final Set<RealCard> untappableOnUntapStepFromStaticAbility = new HashSet<>();
     private final List<Attach> attachList = new ArrayList<>();
+    private final List<AbilityOnStack> triggeredAbility = new ArrayList<>();
+    private final Deque<OnStackObject> stack = new ArrayDeque<>();
     private Player bob;
     private Player alice;
     private Player turnPlayer;
@@ -30,6 +34,10 @@ public class Game {
 
     public static Game getInstance() {
         return instance;
+    }
+
+    public List<Player> getPlayers() {
+        return List.of(this.bob, this.alice);
     }
 
     private void checkStaticAbility() {
@@ -97,6 +105,9 @@ public class Game {
         this.turnPlayer = alice;
         this.gameCheckpoint = GameCheckpoint.Untap;
 
+        this.triggeredAbility.clear();
+        this.stack.clear();
+
         this.checkStaticAbility();
     }
 
@@ -134,9 +145,22 @@ public class Game {
     }
 
     public void toNext() {
+        if (!this.stack.isEmpty()) {
+            this.stack.pop().resolve();
+            return;
+        }
+
         switch (this.gameCheckpoint) {
-            case Untap -> {
-                this.onUntap();
+            case Untap -> this.onUntap();
+            case UpkeepStarted -> this.onUpkeepStarted();
+        }
+
+        if (this.stack.isEmpty()) {
+            var newCheckpointIndex = Arrays.stream(GameCheckpoint.values()).toList().indexOf(this.gameCheckpoint) + 1;
+            if (newCheckpointIndex > GameCheckpoint.values().length - 1) {
+                this.gameCheckpoint = GameCheckpoint.Untap;
+            } else {
+                this.gameCheckpoint = GameCheckpoint.values()[newCheckpointIndex];
             }
         }
     }
@@ -146,11 +170,26 @@ public class Game {
                 .filter(card -> (!card.isPhaseIn()) || Game.getInstance().hasPhasing(card))
                 .forEach(RealCard::reversePhasingOnUntapPhase);
         this.checkStaticAbility();
-        this.getTurnPlayer().field().stream()
+        var untapCard = this.getTurnPlayer().field().stream()
                 .filter(card -> !this.untappableOnUntapStepFromStaticAbility.contains(card))
-                .forEach(RealCard::untap);
+                .filter(RealCard::isTapped)
+                .collect(Collectors.toSet());
+        untapCard.forEach(RealCard::untap);
         this.checkStaticAbility();
-        this.gameCheckpoint = GameCheckpoint.Upkeep;
+
+        this.getFieldCardsExceptPhaseOut().stream()
+                .map(card -> card.getText().onUntappedCard(untapCard))
+                .forEach(this.triggeredAbility::addAll);
+    }
+
+    public void onUpkeepStarted() {
+        this.getFieldCardsExceptPhaseOut().stream()
+                .map(card -> card.getText().onUpkeepStarted())
+                .forEach(this.triggeredAbility::addAll);
+        this.triggeredAbility.stream()
+                .sorted(Comparator.comparingInt(p -> p.getController().map(c -> this.getPlayers().indexOf(c)).orElse(-1)))
+                .forEach(this.stack::push);
+        this.triggeredAbility.clear();
     }
 
     public Pair<Integer, Integer> getPT(RealCard card) {
@@ -207,6 +246,15 @@ public class Game {
         };
     }
 
+    public void mill(Player player, int number) {
+        if (number > 0) {
+            number = Math.min(number, player.deck().size());
+            player.deck().subList(0, number).clear();
+            this.logger.accept(number + " card was milled");
+        }
+        this.checkStaticAbility();
+    }
+
     public boolean hasHexProof(RealCard card) {
         return this.hexproofFromStaticAbility.contains(card);
     }
@@ -219,9 +267,17 @@ public class Game {
         return this.phasingFromStaticAbility.contains(card);
     }
 
+    public List<OnStackObject> getStack() {
+        return List.copyOf(this.stack);
+    }
+
+    public void castSpell(RealCard card) {
+        this.stack.push(card);
+    }
+
     private enum GameCheckpoint {
         Untap,
-        Upkeep,
+        UpkeepStarted,
         Draw,
         Main,
         End

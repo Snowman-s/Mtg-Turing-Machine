@@ -229,6 +229,13 @@ public class Main extends PApplet {
         }
         this.popStyle();
 
+        if (!game.getStack().isEmpty()) {
+            this.pushStyle();
+            this.stroke(255);
+            this.fill(0);
+            this.rect(this.getStackX(), this.getStackY(), this.width - this.getStackX(), this.getCardHeight());
+            this.popStyle();
+        }
         this.pushStyle();
         this.cardGeometries.forEach(i ->
                 this.renderCard(i.card, i.geometry.x, i.geometry.y,
@@ -320,6 +327,19 @@ public class Main extends PApplet {
                             }
                     );
         }
+        //Stack
+        {
+            var stack = game.getStack();
+            var x = new AtomicReference<>(this.getStackX());
+            if (!stack.isEmpty()) {
+                stack.forEach(ability -> {
+                    this.cardGeometries.add(new CardGeometry(ability.getSource(), new Rectangle2D.Float(
+                            x.get(), this.getStackY(), this.getCardWidth(), this.getCardHeight()
+                    )));
+                    x.set(x.get() + this.getCardWidth() * 0.9F);
+                });
+            }
+        }
     }
 
     @Override
@@ -372,6 +392,14 @@ public class Main extends PApplet {
 
     private float getNextButtonY() {
         return this.height - this.getNextButtonHeight();
+    }
+
+    private float getStackX() {
+        return this.width / 2F;
+    }
+
+    private float getStackY() {
+        return this.height / 2F - this.getCardHeight();
     }
 
     private void renderCard(RealCard card, float x, float y, float width, float height, boolean ignoreTapped) {

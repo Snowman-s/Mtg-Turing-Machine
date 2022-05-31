@@ -2,6 +2,7 @@ package snowesamosc.mtgturing.cards;
 
 import snowesamosc.mtgturing.CardKind;
 import snowesamosc.mtgturing.Game;
+import snowesamosc.mtgturing.OnStackObject;
 import snowesamosc.mtgturing.Player;
 import snowesamosc.mtgturing.cards.cardtexts.*;
 
@@ -9,7 +10,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class RealCard {
+public class RealCard implements OnStackObject {
     private final Set<CardColor> originalColors;
     private final SortedSet<CardColor> colorsAdded = new TreeSet<>();
     private final Set<CardType> originalCardTypes;
@@ -184,6 +185,12 @@ public class RealCard {
         return this.plus1CounterNum;
     }
 
+    @Override
+    public RealCard getSource() {
+        return this;
+    }
+
+    @Override
     public Optional<Player> getController() {
         var g = Game.getInstance();
 
@@ -191,6 +198,11 @@ public class RealCard {
         if (g.getAlice().field().stream().anyMatch(card -> card == this)) return Optional.of(g.getAlice());
 
         return Optional.empty();
+    }
+
+    @Override
+    public void resolve() {
+        this.cardText.resolveThisSpell();
     }
 
     public enum PhaseType {
