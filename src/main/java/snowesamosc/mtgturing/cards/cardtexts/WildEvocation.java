@@ -15,7 +15,7 @@ public class WildEvocation extends CardText {
             var hands = game.getTurnPlayer().hands();
             if (hands.isEmpty()) return;
             var targetCard = hands.remove(ThreadLocalRandom.current().nextInt(hands.size()));
-            game.castSpell(targetCard);
+            game.castSpell(game.getTurnPlayer(), targetCard);
         });
     }
 }

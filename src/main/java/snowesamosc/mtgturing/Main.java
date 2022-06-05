@@ -7,6 +7,7 @@ import processing.event.MouseEvent;
 import snowesamosc.mtgturing.cards.*;
 import snowesamosc.mtgturing.cards.cardtexts.*;
 
+import javax.swing.*;
 import java.awt.geom.Rectangle2D;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -17,17 +18,20 @@ import java.util.stream.Collectors;
 
 public class Main extends PApplet {
     private final AtomicBoolean loadEnded = new AtomicBoolean(false);
+    private final List<String> logTextList = Collections.synchronizedList(new ArrayList<>());
     private List<CardSubType> tape;
     private EnumMap<CardKind, CardLoader.CardInfo<PImage>> cardInfos = new EnumMap<>(CardKind.class);
     private PImage tokenImage = null;
     private RealCard selectedCard = null;
     private PFont cardTextFont = null;
     private List<ControllerLoader.Table2Element> controllerInfo = null;
-
     private List<CardGeometry> cardGeometries = new ArrayList<>();
+    private JFrame loggerFrame;
+    private JTextArea loggerTextArea;
 
     public static void main(String[] args) {
         Property.getInstance().setLanguage("Japanese");
+
         PApplet.main("snowesamosc.mtgturing.Main");
     }
 
@@ -38,6 +42,17 @@ public class Main extends PApplet {
 
     @Override
     public void setup() {
+        this.loggerFrame = new JFrame("log");
+        this.loggerFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+        this.loggerFrame.setSize((int) (this.displayWidth * 0.3), 500);
+        this.loggerFrame.setVisible(true);
+        this.loggerTextArea = new JTextArea();
+        this.loggerTextArea.setLineWrap(true);
+        var scrollPane = new JScrollPane(this.loggerTextArea);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setSize(this.loggerFrame.getWidth(), this.loggerFrame.getHeight());
+        this.loggerFrame.add(scrollPane);
+
         var prop = Property.getInstance();
 
         new Thread(() -> {
@@ -92,7 +107,21 @@ public class Main extends PApplet {
             game.init(
                     bob,
                     alice,
-                    System.out::println
+                    (str) -> {
+                        synchronized (this.logTextList) {
+                            this.logTextList.add(str);
+                        }
+                    },
+                    cards -> {
+                        var cardMap = cards.stream()
+                                .map(card -> "<" + this.cardInfos.get(card.getKind()).cardName() + ">")
+                                .collect(Collectors.groupingBy(s -> s));
+                        return cardMap.entrySet().stream()
+                                .map(entry -> {
+                                    var size = entry.getValue().size();
+                                    return entry.getKey() + (size == 1 ? "" : "×" + size);
+                                }).collect(Collectors.joining(", "));
+                    }
             );
 
             this.setCardGeometries();
@@ -241,6 +270,10 @@ public class Main extends PApplet {
                 this.renderCard(i.card, i.geometry.x, i.geometry.y,
                         this.getCardWidth(), this.getCardHeight(), false));
         this.popStyle();
+
+        synchronized (this.logTextList) {
+            this.loggerTextArea.setText(this.logTextList.stream().reduce("", (a, b) -> a + "\n" + b));
+        }
     }
 
     private void setCardGeometries() {

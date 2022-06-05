@@ -9,6 +9,7 @@ import snowesamosc.mtgturing.cards.RealCard;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Game {
@@ -26,7 +27,9 @@ public class Game {
     private Player alice;
     private Player turnPlayer;
     private GameCheckpoint gameCheckpoint;
-    private Consumer<String> logger;
+    private Consumer<String> logger = ignored -> {
+    };
+    private Function<Collection<? extends RealCard>, String> cardNameGetter = c -> "???";
 
     private Game() {
 
@@ -38,6 +41,12 @@ public class Game {
 
     public List<Player> getPlayers() {
         return List.of(this.bob, this.alice);
+    }
+
+    public String getPlayerName(Player player) {
+        return player == this.bob ? "Bob" :
+                player == this.alice ? "Alice" :
+                        "Unknown Player";
     }
 
     private void checkStaticAbility() {
@@ -97,16 +106,19 @@ public class Game {
                 .forEach(this.untappableOnUntapStepFromStaticAbility::addAll);
     }
 
-    public void init(Player bob, Player alice, Consumer<String> logger) {
+    public void init(Player bob, Player alice, Consumer<String> logger, Function<Collection<? extends RealCard>, String> cardNameGetter) {
         this.bob = bob;
         this.alice = alice;
         this.logger = logger;
+        this.cardNameGetter = cardNameGetter;
 
         this.turnPlayer = bob;
         this.gameCheckpoint = GameCheckpoint.End;
 
         this.triggeredAbility.clear();
         this.stack.clear();
+
+        logger.accept("Game started.");
 
         this.checkStaticAbility();
     }
@@ -146,13 +158,16 @@ public class Game {
 
     public void toNext() {
         if (!this.stack.isEmpty()) {
-            this.stack.pop().resolve();
+            var resolveCard = this.stack.pop();
+            this.logger.accept("Resolve " + this.cardNameGetter.apply(Collections.singleton(resolveCard.getSource())) + ".");
+            resolveCard.resolve();
             return;
         } else {
             var newCheckpointIndex = Arrays.stream(GameCheckpoint.values()).toList().indexOf(this.gameCheckpoint) + 1;
             if (newCheckpointIndex > GameCheckpoint.values().length - 1) {
                 this.gameCheckpoint = GameCheckpoint.Untap;
                 this.turnPlayer = this.turnPlayer == this.bob ? this.alice : this.bob;
+                this.logger.accept("Now " + this.getPlayerName(this.turnPlayer) + "'s turn.");
             } else {
                 this.gameCheckpoint = GameCheckpoint.values()[newCheckpointIndex];
             }
@@ -165,16 +180,23 @@ public class Game {
     }
 
     public void onUntap() {
-        this.getTurnPlayer().field().stream()
-                .filter(card -> (!card.isPhaseIn()) || Game.getInstance().hasPhasing(card))
-                .forEach(RealCard::reversePhasingOnUntapPhase);
-        this.checkStaticAbility();
+        var phasingCards = this.getTurnPlayer().field().stream()
+                .filter(card -> (card.canPhaseInIndependently()) || Game.getInstance().hasPhasing(card))
+                .collect(Collectors.toSet());
+        if (phasingCards.size() > 0) {
+            phasingCards.forEach(RealCard::reversePhasingOnUntapPhase);
+            this.checkStaticAbility();
+            this.logger.accept(this.cardNameGetter.apply(phasingCards) + " were phase in/out.");
+        }
         var untapCard = this.getTurnPlayer().field().stream()
                 .filter(card -> !this.untappableOnUntapStepFromStaticAbility.contains(card))
                 .filter(RealCard::isTapped)
                 .collect(Collectors.toSet());
-        untapCard.forEach(RealCard::untap);
-        this.checkStaticAbility();
+        if (untapCard.size() > 0) {
+            untapCard.forEach(RealCard::untap);
+            this.checkStaticAbility();
+            this.logger.accept(this.cardNameGetter.apply(untapCard) + " were untapped.");
+        }
 
         this.getFieldCardsExceptPhaseOut().stream()
                 .map(card -> card.getText().onUntappedCard(untapCard))
@@ -249,7 +271,7 @@ public class Game {
         if (number > 0) {
             number = Math.min(number, player.deck().size());
             player.deck().subList(0, number).clear();
-            this.logger.accept(number + " card was milled");
+            this.logger.accept(this.getPlayerName(player) + " milled " + number + " cards.");
         }
         this.checkStaticAbility();
     }
@@ -270,8 +292,9 @@ public class Game {
         return List.copyOf(this.stack);
     }
 
-    public void castSpell(RealCard card) {
-        this.stack.push(card);
+    public void castSpell(Player controller, RealCard card) {
+        this.logger.accept(this.getPlayerName(controller) + " casted " + this.cardNameGetter.apply(Collections.singleton(card)) + ".");
+        this.stack.push(new CastedSpell(controller, card));
     }
 
     private enum GameCheckpoint {
@@ -282,6 +305,23 @@ public class Game {
         End
     }
 
-    public static record Attach(RealCard main, RealCard sub) {
+    public record Attach(RealCard main, RealCard sub) {
+    }
+
+    public record CastedSpell(Player controller, RealCard card) implements OnStackObject {
+        @Override
+        public RealCard getSource() {
+            return this.card;
+        }
+
+        @Override
+        public Optional<Player> getController() {
+            return Optional.of(this.controller);
+        }
+
+        @Override
+        public void resolve() {
+            this.card.resolve();
+        }
     }
 }

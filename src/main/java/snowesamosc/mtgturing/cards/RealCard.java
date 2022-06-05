@@ -140,6 +140,10 @@ public class RealCard implements OnStackObject {
         }
     }
 
+    public boolean canPhaseInIndependently() {
+        return this.phaseIn == PhaseType.DirectlyPhaseOut;
+    }
+
     public boolean isPhaseIn() {
         return this.phaseIn == PhaseType.PhaseIn;
     }
