@@ -7,10 +7,7 @@ import snowesamosc.mtgturing.cards.CardColor;
 import snowesamosc.mtgturing.cards.CardSubType;
 import snowesamosc.mtgturing.cards.RealCard;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 public class CardText {
     private RealCard owner;
@@ -31,7 +28,7 @@ public class CardText {
         return Optional.empty();
     }
 
-    public Set<AbilityOnStack> onUntappedCard(Set<RealCard> untappedCards) {
+    public Set<AbilityOnStack> onUntappedCard(Collection<? extends RealCard> untappedCards) {
         return Collections.emptySet();
     }
 

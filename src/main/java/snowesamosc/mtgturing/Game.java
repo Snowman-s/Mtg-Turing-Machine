@@ -113,6 +113,10 @@ public class Game {
                 .forEach(this.untappableOnUntapStepFromEffect::addAll);
     }
 
+    private void doStateBasedAction() {
+        this.checkStaticAbility();
+    }
+
     public void init(Player bob, Player alice, Consumer<String> logger, Function<Collection<? extends RealCard>, String> cardNameGetter) {
         this.bob = bob;
         this.alice = alice;
@@ -169,22 +173,28 @@ public class Game {
             this.logger.accept("Resolve " + this.cardNameGetter.apply(Collections.singleton(resolveCard.getSource())) + ".");
             resolveCard.resolve();
             this.checkStaticAbility();
+            this.doStateBasedAction();
             return;
-        } else {
-            var newCheckpointIndex = Arrays.stream(GameCheckpoint.values()).toList().indexOf(this.gameCheckpoint) + 1;
-            if (newCheckpointIndex > GameCheckpoint.values().length - 1) {
-                this.gameCheckpoint = GameCheckpoint.Untap;
-                this.turnPlayer = this.turnPlayer == this.bob ? this.alice : this.bob;
-                this.logger.accept("Now " + this.getPlayerName(this.turnPlayer) + "'s turn.");
-            } else {
-                this.gameCheckpoint = GameCheckpoint.values()[newCheckpointIndex];
-            }
         }
+
+        var newCheckpointIndex = Arrays.stream(GameCheckpoint.values()).toList().indexOf(this.gameCheckpoint) + 1;
+        if (newCheckpointIndex > GameCheckpoint.values().length - 1) {
+            this.effectUntilTurnEnd.clear();
+            this.gameCheckpoint = GameCheckpoint.Untap;
+            this.turnPlayer = this.turnPlayer == this.bob ? this.alice : this.bob;
+            this.logger.accept("Now " + this.getPlayerName(this.turnPlayer) + "'s turn.");
+        } else {
+            this.gameCheckpoint = GameCheckpoint.values()[newCheckpointIndex];
+        }
+
+        this.checkStaticAbility();
 
         switch (this.gameCheckpoint) {
             case Untap -> this.onUntap();
             case UpkeepStarted -> this.onUpkeepStarted();
         }
+
+        this.doStateBasedAction();
     }
 
     public void onUntap() {
@@ -196,19 +206,12 @@ public class Game {
             this.checkStaticAbility();
             this.logger.accept(this.cardNameGetter.apply(phasingCards) + " were phase in/out.");
         }
+
         var untapCard = this.getTurnPlayer().field().stream()
                 .filter(card -> !this.untappableOnUntapStepFromEffect.contains(card))
                 .filter(RealCard::isTapped)
                 .collect(Collectors.toSet());
-        if (untapCard.size() > 0) {
-            untapCard.forEach(RealCard::untap);
-            this.checkStaticAbility();
-            this.logger.accept(this.cardNameGetter.apply(untapCard) + " were untapped.");
-        }
-
-        this.getFieldCardsExceptPhaseOut().stream()
-                .map(card -> card.getText().onUntappedCard(untapCard))
-                .forEach(this::trigger);
+        this.untap(untapCard);
     }
 
     public void onUpkeepStarted() {
@@ -288,6 +291,20 @@ public class Game {
         this.checkStaticAbility();
     }
 
+    public void untap(Collection<? extends RealCard> cards) {
+        if (cards.isEmpty()) return;
+
+        cards.forEach(RealCard::untap);
+        this.checkStaticAbility();
+        this.logger.accept(this.cardNameGetter.apply(cards) + " were untapped.");
+
+        this.checkStaticAbility();
+
+        this.getFieldCardsExceptPhaseOut().stream()
+                .map(card -> card.getText().onUntappedCard(cards))
+                .forEach(this::trigger);
+    }
+
     public boolean hasHexProof(RealCard card) {
         return this.hexproofFromEffect.contains(card);
     }
@@ -311,6 +328,8 @@ public class Game {
                 .distinct()
                 .forEach(srcString -> this.logger.accept(srcString + "'s ability was triggered."));
         this.triggeredAbility.addAll(abilities);
+
+        this.checkStaticAbility();
     }
 
     public void castSpell(Player controller, RealCard card) {
