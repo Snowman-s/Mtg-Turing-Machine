@@ -496,6 +496,7 @@ public class Main extends PApplet {
         {
             RealCard card = RealCard.createCard(CardKind.FungusSliver, map);
             card.asThatCardText(FungusSliver.class, c -> c.setPlusType(CardSubType.Incarnation));
+            card.putPlusOrMinus1Counter(1);
             fields.add(card);
         }
         {

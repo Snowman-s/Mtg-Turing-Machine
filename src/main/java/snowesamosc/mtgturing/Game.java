@@ -10,16 +10,20 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Game {
     private static final Game instance = new Game();
-    private final Map<RealCard, List<Pair<Integer, Integer>>> ptAddersFromStaticAbility = new HashMap<>();
-    private final Map<RealCard, SortedSet<CardSubType>> subtypeAddersFromStaticAbility = new HashMap<>();
-    private final Set<RealCard> hexproofFromStaticAbility = new HashSet<>();
-    private final Set<RealCard> shroudFromStaticAbility = new HashSet<>();
-    private final Set<RealCard> phasingFromStaticAbility = new HashSet<>();
-    private final Set<RealCard> untappableOnUntapStepFromStaticAbility = new HashSet<>();
+    private final Map<RealCard, List<Pair<Integer, Integer>>> ptAddersFromEffect = new HashMap<>();
+    private final Map<RealCard, SortedSet<CardSubType>> subtypeAddersFromEffect = new HashMap<>();
+
+    private final List<ContinuousEffect> effectUntilTurnEnd = new ArrayList<>();
+    private final Set<RealCard> hexproofFromEffect = new HashSet<>();
+    private final Set<RealCard> shroudFromEffect = new HashSet<>();
+    private final Set<RealCard> phasingFromEffect = new HashSet<>();
+    private final Set<RealCard> untappableOnUntapStepFromEffect = new HashSet<>();
     private final List<Attach> attachList = new ArrayList<>();
     private final List<AbilityOnStack> triggeredAbility = new ArrayList<>();
     private final Deque<OnStackObject> stack = new ArrayDeque<>();
@@ -62,48 +66,51 @@ public class Game {
         //カウンター
         effectFromStaticAbility.add(this.createEffectForPlusOrMinusPTCounter());
 
-        this.ptAddersFromStaticAbility.clear();
-        this.subtypeAddersFromStaticAbility.clear();
-        this.hexproofFromStaticAbility.clear();
-        this.shroudFromStaticAbility.clear();
-        this.phasingFromStaticAbility.clear();
-        this.untappableOnUntapStepFromStaticAbility.clear();
+        this.ptAddersFromEffect.clear();
+        this.subtypeAddersFromEffect.clear();
+        this.hexproofFromEffect.clear();
+        this.shroudFromEffect.clear();
+        this.phasingFromEffect.clear();
+        this.untappableOnUntapStepFromEffect.clear();
 
-        effectFromStaticAbility.stream()
+        Supplier<Stream<ContinuousEffect>> effects = () ->
+                Stream.concat(effectFromStaticAbility.stream(), this.effectUntilTurnEnd.stream());
+
+        effects.get()
                 .map(ContinuousEffect::addSubType)
                 .forEach(
                         map -> map.forEach((key, value) -> {
-                            if (!this.subtypeAddersFromStaticAbility.containsKey(key))
-                                this.subtypeAddersFromStaticAbility.put(key, new TreeSet<>());
-                            this.subtypeAddersFromStaticAbility.get(key).addAll(value);
+                            if (!this.subtypeAddersFromEffect.containsKey(key))
+                                this.subtypeAddersFromEffect.put(key, new TreeSet<>());
+                            this.subtypeAddersFromEffect.get(key).addAll(value);
                         })
                 );
 
-        effectFromStaticAbility.stream()
+        effects.get()
                 .map(ContinuousEffect::getHexproofCard)
-                .forEach(this.hexproofFromStaticAbility::addAll);
+                .forEach(this.hexproofFromEffect::addAll);
 
-        effectFromStaticAbility.stream()
+        effects.get()
                 .map(ContinuousEffect::getShroudCard)
-                .forEach(this.shroudFromStaticAbility::addAll);
+                .forEach(this.shroudFromEffect::addAll);
 
-        effectFromStaticAbility.stream()
+        effects.get()
                 .map(ContinuousEffect::getPhasingCard)
-                .forEach(this.phasingFromStaticAbility::addAll);
+                .forEach(this.phasingFromEffect::addAll);
 
-        effectFromStaticAbility.stream()
+        effects.get()
                 .map(ContinuousEffect::addPT)
                 .forEach(
                         map -> map.forEach((key, value) -> {
-                            if (!this.ptAddersFromStaticAbility.containsKey(key))
-                                this.ptAddersFromStaticAbility.put(key, new ArrayList<>());
-                            this.ptAddersFromStaticAbility.get(key).add(value);
+                            if (!this.ptAddersFromEffect.containsKey(key))
+                                this.ptAddersFromEffect.put(key, new ArrayList<>());
+                            this.ptAddersFromEffect.get(key).add(value);
                         })
                 );
 
-        effectFromStaticAbility.stream()
+        effects.get()
                 .map(ContinuousEffect::getNotUntappableOnUntapStep)
-                .forEach(this.untappableOnUntapStepFromStaticAbility::addAll);
+                .forEach(this.untappableOnUntapStepFromEffect::addAll);
     }
 
     public void init(Player bob, Player alice, Consumer<String> logger, Function<Collection<? extends RealCard>, String> cardNameGetter) {
@@ -161,6 +168,7 @@ public class Game {
             var resolveCard = this.stack.pop();
             this.logger.accept("Resolve " + this.cardNameGetter.apply(Collections.singleton(resolveCard.getSource())) + ".");
             resolveCard.resolve();
+            this.checkStaticAbility();
             return;
         } else {
             var newCheckpointIndex = Arrays.stream(GameCheckpoint.values()).toList().indexOf(this.gameCheckpoint) + 1;
@@ -189,7 +197,7 @@ public class Game {
             this.logger.accept(this.cardNameGetter.apply(phasingCards) + " were phase in/out.");
         }
         var untapCard = this.getTurnPlayer().field().stream()
-                .filter(card -> !this.untappableOnUntapStepFromStaticAbility.contains(card))
+                .filter(card -> !this.untappableOnUntapStepFromEffect.contains(card))
                 .filter(RealCard::isTapped)
                 .collect(Collectors.toSet());
         if (untapCard.size() > 0) {
@@ -200,13 +208,13 @@ public class Game {
 
         this.getFieldCardsExceptPhaseOut().stream()
                 .map(card -> card.getText().onUntappedCard(untapCard))
-                .forEach(this.triggeredAbility::addAll);
+                .forEach(this::trigger);
     }
 
     public void onUpkeepStarted() {
         this.getFieldCardsExceptPhaseOut().stream()
                 .map(card -> card.getText().onUpkeepStarted())
-                .forEach(this.triggeredAbility::addAll);
+                .forEach(this::trigger);
         this.triggeredAbility.stream()
                 .sorted(Comparator.comparingInt(p -> p.getController().map(c -> this.getPlayers().indexOf(c)).orElse(-1)))
                 .forEach(this.stack::push);
@@ -214,7 +222,7 @@ public class Game {
     }
 
     public Pair<Integer, Integer> getPT(RealCard card) {
-        var ptModifierList = this.ptAddersFromStaticAbility.getOrDefault(card, List.of());
+        var ptModifierList = this.ptAddersFromEffect.getOrDefault(card, List.of());
 
         var p = new AtomicInteger(card.getPower());
         var t = new AtomicInteger(card.getToughness());
@@ -228,7 +236,7 @@ public class Game {
     }
 
     public Set<CardSubType> getSubType(RealCard card) {
-        var subTypeModifierList = this.subtypeAddersFromStaticAbility
+        var subTypeModifierList = this.subtypeAddersFromEffect
                 .getOrDefault(card, Collections.emptySortedSet());
         var ret = new HashSet<>(card.getSubTypes());
         ret.addAll(subTypeModifierList);
@@ -246,6 +254,10 @@ public class Game {
                 .forEach(ret::add);
 
         return ret;
+    }
+
+    public void addUntilTurnEndEffect(Collection<? extends ContinuousEffect> effects) {
+        this.effectUntilTurnEnd.addAll(effects);
     }
 
     public ContinuousEffect createEffectForPlusOrMinusPTCounter() {
@@ -277,19 +289,28 @@ public class Game {
     }
 
     public boolean hasHexProof(RealCard card) {
-        return this.hexproofFromStaticAbility.contains(card);
+        return this.hexproofFromEffect.contains(card);
     }
 
     public boolean hasShroud(RealCard card) {
-        return this.shroudFromStaticAbility.contains(card);
+        return this.shroudFromEffect.contains(card);
     }
 
     public boolean hasPhasing(RealCard card) {
-        return this.phasingFromStaticAbility.contains(card);
+        return this.phasingFromEffect.contains(card);
     }
 
     public List<OnStackObject> getStack() {
         return List.copyOf(this.stack);
+    }
+
+    public void trigger(Collection<? extends AbilityOnStack> abilities) {
+        abilities.stream()
+                .map(AbilityOnStack::getSource)
+                .map(source -> this.cardNameGetter.apply(Collections.singleton(source)))
+                .distinct()
+                .forEach(srcString -> this.logger.accept(srcString + "'s ability was triggered."));
+        this.triggeredAbility.addAll(abilities);
     }
 
     public void castSpell(Player controller, RealCard card) {
