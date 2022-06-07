@@ -3,6 +3,9 @@ package snowesamosc.mtgturing;
 import snowesamosc.mtgturing.cards.CardColor;
 import snowesamosc.mtgturing.cards.CardSubType;
 import snowesamosc.mtgturing.cards.CardType;
+import snowesamosc.mtgturing.cards.CreatureToken;
+
+import java.util.stream.Collectors;
 
 public class Property {
     private static final Property instance = new Property();
@@ -116,5 +119,14 @@ public class Property {
 
         //足しすぎた文字の削除
         return ret.isEmpty() ? "" : ret.substring(0, ret.length() - 2);
+    }
+
+    public String getTokenCardName(CreatureToken token) {
+        return switch (this.getLanguage()) {
+            case "Japanese" ->
+                    token.originalCardSubTypesForName().stream().map(this::translate).collect(Collectors.joining("・")) + "・トークン";
+            default ->
+                    token.originalCardSubTypesForName().stream().map(this::translate).collect(Collectors.joining(" ")) + " Token";
+        };
     }
 }

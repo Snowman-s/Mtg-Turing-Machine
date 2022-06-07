@@ -114,7 +114,7 @@ public class Main extends PApplet {
                     },
                     cards -> {
                         var cardMap = cards.stream()
-                                .map(card -> card.isToken() ? "Token" : "<" + this.cardInfos.get(card.getKind()).cardName() + ">")
+                                .map(card -> "<" + this.getCardName(card) + ">")
                                 .collect(Collectors.groupingBy(s -> s));
                         return cardMap.entrySet().stream()
                                 .map(entry -> {
@@ -169,14 +169,12 @@ public class Main extends PApplet {
                     this.getOpPanelWidth(), this.getOpPanelWidth() * this.getCardAspectRatio(),
                     true);
 
-            String name, text;
+            String name = this.getCardName(this.selectedCard), text;
             {
                 if (this.selectedCard.isToken()) {
-                    name = "Token";
                     text = "";
                 } else {
                     var cardInfo = this.cardInfos.get(this.selectedCard.getKind());
-                    name = cardInfo.cardName();
                     text = cardInfo.cardText();
                 }
 
@@ -274,6 +272,11 @@ public class Main extends PApplet {
         synchronized (this.logTextList) {
             this.loggerTextArea.setText(this.logTextList.stream().reduce("", (a, b) -> a + "\n" + b));
         }
+    }
+
+    private String getCardName(RealCard card) {
+        return card.asToken().map(token -> Property.getInstance().getTokenCardName(token))
+                .orElseGet(() -> this.cardInfos.get(card.getKind()).cardName());
     }
 
     private void setCardGeometries() {

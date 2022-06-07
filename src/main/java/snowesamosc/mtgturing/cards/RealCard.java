@@ -115,6 +115,10 @@ public class RealCard implements OnStackObject {
         return false;
     }
 
+    public Optional<CreatureToken> asToken() {
+        return Optional.empty();
+    }
+
     public void tap() {
         this.tapped = true;
     }
