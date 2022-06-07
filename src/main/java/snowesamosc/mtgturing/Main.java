@@ -14,6 +14,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Main extends PApplet {
@@ -284,9 +285,33 @@ public class Main extends PApplet {
         var bob = game.getBob();
         var alice = game.getAlice();
 
-        Comparator<RealCard> comparator = (a, b) ->
-                Comparator.nullsLast(Comparator.comparing((CardKind t) -> t))
-                        .compare(a.getKind(), b.getKind());
+        Comparator<RealCard> comparator = (a, b) -> {
+            if (a.isToken() ^ b.isToken()) {
+                var ai = a.isToken() ? 1 : 0;
+                var bi = b.isToken() ? 1 : 0;
+
+                return ai - bi;
+            } else if (a.isToken() && b.isToken()) {
+                //表示を整えるために無理やり調整
+                Function<CardColor, Integer> colorTranspiler = (color) ->
+                        switch (color) {
+                            case Red -> 0;
+                            case Blue -> 1;
+                            case Black -> 2;
+                            case Green -> 3;
+                            case White -> 4;
+                        };
+                var ai = a.getColors().stream().map(color -> 1 << colorTranspiler.apply(color)).reduce(0, Integer::sum);
+                var bi = b.getColors().stream().map(color -> 1 << colorTranspiler.apply(color)).reduce(0, Integer::sum);
+
+                if (ai - bi != 0) return ai - bi;
+                var powerComparator = Comparator.comparing((RealCard card) -> game.getPT(card).component1());
+
+                return a.getColors().contains(CardColor.White) ? powerComparator.compare(a, b) : powerComparator.compare(b, a);
+            } else {
+                return Comparator.comparing(RealCard::getKind).compare(a, b);
+            }
+        };
 
         this.cardGeometries = new ArrayList<>();
         final float caX = this.getOpPanelWidth(); //cardAreaX

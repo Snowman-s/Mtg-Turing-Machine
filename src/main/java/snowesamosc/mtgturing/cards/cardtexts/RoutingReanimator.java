@@ -1,14 +1,15 @@
 package snowesamosc.mtgturing.cards.cardtexts;
 
 import kotlin.Pair;
+import snowesamosc.mtgturing.Game;
 import snowesamosc.mtgturing.abilityonstack.AbilityOnStack;
-import snowesamosc.mtgturing.cards.CardColor;
-import snowesamosc.mtgturing.cards.CardSubType;
-import snowesamosc.mtgturing.cards.RealCard;
+import snowesamosc.mtgturing.cards.*;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class RoutingReanimator extends CardText {
     private final CardSubType originalDieType = CardSubType.Cleric;
@@ -57,6 +58,18 @@ public class RoutingReanimator extends CardText {
 
     @Override
     public Set<AbilityOnStack> onDeadCard(Collection<? extends RealCard> deathCards) {
-        return super.onDeadCard(deathCards);
+        return this.createAbilitiesOnStackSet(deathCards.stream()
+                .filter(card -> card.getCardTypes().contains(CardType.Creature))
+                .filter(card -> card.getSubTypes().contains(RoutingReanimator.this.dieType))
+                .filter(card -> card.getController().equals(this.getOwner().getController()))
+                .map(card -> (Runnable) (() -> {
+                            var owner = this.getOwner().getController();
+                            if (owner.isEmpty()) return;
+                            var token = new CreatureToken(this.createColor, this.createType, 2, 2);
+                            Game.getInstance().createToken(Collections.singleton(new Pair<>(owner.get(), token)));
+                        })
+                )
+                .collect(Collectors.toSet())
+        );
     }
 }

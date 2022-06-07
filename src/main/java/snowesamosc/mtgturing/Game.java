@@ -4,6 +4,7 @@ import kotlin.Pair;
 import snowesamosc.mtgturing.abilityonstack.AbilityOnStack;
 import snowesamosc.mtgturing.cards.CardSubType;
 import snowesamosc.mtgturing.cards.CardType;
+import snowesamosc.mtgturing.cards.CreatureToken;
 import snowesamosc.mtgturing.cards.RealCard;
 
 import java.util.*;
@@ -177,26 +178,25 @@ public class Game {
         if (!this.stack.isEmpty()) {
             var resolveCard = this.stack.pop();
             this.logger.accept("Resolve " + this.cardNameGetter.apply(Collections.singleton(resolveCard.getSource())) + ".");
+            this.checkStaticAbility();
             resolveCard.resolve();
             this.checkStaticAbility();
-            this.doStateBasedAction();
-            return;
-        }
-
-        var newCheckpointIndex = Arrays.stream(GameCheckpoint.values()).toList().indexOf(this.gameCheckpoint) + 1;
-        if (newCheckpointIndex > GameCheckpoint.values().length - 1) {
-            this.effectUntilTurnEnd.clear();
-            this.gameCheckpoint = GameCheckpoint.UntapAndUpkeepStarted;
-            this.turnPlayer = this.turnPlayer == this.bob ? this.alice : this.bob;
-            this.logger.accept("Now " + this.getPlayerName(this.turnPlayer) + "'s turn.");
         } else {
-            this.gameCheckpoint = GameCheckpoint.values()[newCheckpointIndex];
-        }
+            var newCheckpointIndex = Arrays.stream(GameCheckpoint.values()).toList().indexOf(this.gameCheckpoint) + 1;
+            if (newCheckpointIndex > GameCheckpoint.values().length - 1) {
+                this.effectUntilTurnEnd.clear();
+                this.gameCheckpoint = GameCheckpoint.UntapAndUpkeepStarted;
+                this.turnPlayer = this.turnPlayer == this.bob ? this.alice : this.bob;
+                this.logger.accept("Now " + this.getPlayerName(this.turnPlayer) + "'s turn.");
+            } else {
+                this.gameCheckpoint = GameCheckpoint.values()[newCheckpointIndex];
+            }
 
-        this.checkStaticAbility();
+            this.checkStaticAbility();
 
-        switch (this.gameCheckpoint) {
-            case UntapAndUpkeepStarted -> this.onUntapAndUpkeepStarted();
+            switch (this.gameCheckpoint) {
+                case UntapAndUpkeepStarted -> this.onUntapAndUpkeepStarted();
+            }
         }
 
         this.doStateBasedAction();
@@ -311,17 +311,19 @@ public class Game {
     public void death(Collection<? extends RealCard> deathCards) {
         if (deathCards.isEmpty()) return;
 
+        this.logger.accept(this.cardNameGetter.apply(deathCards) + " were dead.");
+
+        //「最後の情報」を使用しないといけないので妥協実装
+        this.getFieldCardsExceptPhaseOut().stream()
+                .map(card -> card.getText().onDeadCard(deathCards))
+                .forEach(this::trigger);
+
         deathCards.forEach(
                 card -> this.getPlayers().stream().filter(player -> card.getController().stream().anyMatch(p -> p == player))
                         .findAny()
                         .ifPresent(player -> player.field().remove(card))
         );
 
-        this.getFieldCardsExceptPhaseOut().stream()
-                .map(card -> card.getText().onDeadCard(deathCards))
-                .forEach(this::trigger);
-
-        this.logger.accept(this.cardNameGetter.apply(deathCards) + " were dead.");
 
         this.checkStaticAbility();
     }
@@ -338,6 +340,16 @@ public class Game {
         this.getFieldCardsExceptPhaseOut().stream()
                 .map(card -> card.getText().onUntappedCard(cards))
                 .forEach(this::trigger);
+    }
+
+    public void createToken(Collection<Pair<Player, ? extends CreatureToken>> tokens) {
+        tokens.forEach(
+                tokenPair -> {
+                    if (!this.getPlayers().contains(tokenPair.component1())) return;
+
+                    tokenPair.component1().field().add(tokenPair.component2());
+                }
+        );
     }
 
     public boolean hasHexProof(RealCard card) {

@@ -8,6 +8,7 @@ import snowesamosc.mtgturing.cards.CardSubType;
 import snowesamosc.mtgturing.cards.RealCard;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class CardText {
     private RealCard owner;
@@ -42,6 +43,17 @@ public class CardText {
 
     public void resolveThisSpell() {
 
+    }
+
+    protected final Set<AbilityOnStack> createAbilitiesOnStackSet(Collection<? extends Runnable> runnables) {
+        var owner = this.getOwner();
+        var optionalController = owner.getController();
+        return optionalController.map(
+                controller -> runnables.stream()
+                        .map(this::createAbilityOnStackSet)
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toSet())
+        ).orElse(Collections.emptySet());
     }
 
     protected final Set<AbilityOnStack> createAbilityOnStackSet(Runnable runnable) {
