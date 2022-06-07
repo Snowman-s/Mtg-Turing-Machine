@@ -114,7 +114,7 @@ public class Main extends PApplet {
                     },
                     cards -> {
                         var cardMap = cards.stream()
-                                .map(card -> "<" + this.cardInfos.get(card.getKind()).cardName() + ">")
+                                .map(card -> card.isToken() ? "Token" : "<" + this.cardInfos.get(card.getKind()).cardName() + ">")
                                 .collect(Collectors.groupingBy(s -> s));
                         return cardMap.entrySet().stream()
                                 .map(entry -> {

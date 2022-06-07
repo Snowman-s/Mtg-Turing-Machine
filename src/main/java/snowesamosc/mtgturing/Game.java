@@ -114,6 +114,12 @@ public class Game {
     }
 
     private void doStateBasedAction() {
+        var deathCard = this.getFieldCardsExceptPhaseOut().stream()
+                .filter(card -> card.getCardTypes().contains(CardType.Creature))
+                .filter(card -> this.getPT(card).component2() <= 0)
+                .collect(Collectors.toList());
+        this.death(deathCard);
+
         this.checkStaticAbility();
     }
 
@@ -180,7 +186,7 @@ public class Game {
         var newCheckpointIndex = Arrays.stream(GameCheckpoint.values()).toList().indexOf(this.gameCheckpoint) + 1;
         if (newCheckpointIndex > GameCheckpoint.values().length - 1) {
             this.effectUntilTurnEnd.clear();
-            this.gameCheckpoint = GameCheckpoint.Untap;
+            this.gameCheckpoint = GameCheckpoint.UntapAndUpkeepStarted;
             this.turnPlayer = this.turnPlayer == this.bob ? this.alice : this.bob;
             this.logger.accept("Now " + this.getPlayerName(this.turnPlayer) + "'s turn.");
         } else {
@@ -190,14 +196,29 @@ public class Game {
         this.checkStaticAbility();
 
         switch (this.gameCheckpoint) {
-            case Untap -> this.onUntap();
-            case UpkeepStarted -> this.onUpkeepStarted();
+            case UntapAndUpkeepStarted -> this.onUntapAndUpkeepStarted();
         }
 
         this.doStateBasedAction();
+        this.triggeredAbility.stream()
+                .sorted(Comparator.comparingInt(p -> p.getController()
+                        .map(c -> {
+                            var players = this.getPlayers();
+                            var i = players.indexOf(c);
+                            var turnI = players.indexOf(this.getTurnPlayer());
+                            var deltaI = i - turnI;
+                            return deltaI >= 0 ? deltaI : i + (players.size() - turnI);
+                        })
+                        .orElse(0)))
+                .forEach(this.stack::push);
+        this.triggeredAbility.clear();
+
+        //そして優先権を得る
     }
 
-    public void onUntap() {
+    public void onUntapAndUpkeepStarted() {
+        //アンタップ
+        this.logger.accept("Untap step started.");
         var phasingCards = this.getTurnPlayer().field().stream()
                 .filter(card -> (card.canPhaseInIndependently()) || Game.getInstance().hasPhasing(card))
                 .collect(Collectors.toSet());
@@ -212,16 +233,12 @@ public class Game {
                 .filter(RealCard::isTapped)
                 .collect(Collectors.toSet());
         this.untap(untapCard);
-    }
 
-    public void onUpkeepStarted() {
+        //アップキープ
+        this.logger.accept("Upkeep step started.");
         this.getFieldCardsExceptPhaseOut().stream()
                 .map(card -> card.getText().onUpkeepStarted())
                 .forEach(this::trigger);
-        this.triggeredAbility.stream()
-                .sorted(Comparator.comparingInt(p -> p.getController().map(c -> this.getPlayers().indexOf(c)).orElse(-1)))
-                .forEach(this.stack::push);
-        this.triggeredAbility.clear();
     }
 
     public Pair<Integer, Integer> getPT(RealCard card) {
@@ -291,6 +308,24 @@ public class Game {
         this.checkStaticAbility();
     }
 
+    public void death(Collection<? extends RealCard> deathCards) {
+        if (deathCards.isEmpty()) return;
+
+        deathCards.forEach(
+                card -> this.getPlayers().stream().filter(player -> card.getController().stream().anyMatch(p -> p == player))
+                        .findAny()
+                        .ifPresent(player -> player.field().remove(card))
+        );
+
+        this.getFieldCardsExceptPhaseOut().stream()
+                .map(card -> card.getText().onDeadCard(deathCards))
+                .forEach(this::trigger);
+
+        this.logger.accept(this.cardNameGetter.apply(deathCards) + " were dead.");
+
+        this.checkStaticAbility();
+    }
+
     public void untap(Collection<? extends RealCard> cards) {
         if (cards.isEmpty()) return;
 
@@ -338,8 +373,7 @@ public class Game {
     }
 
     private enum GameCheckpoint {
-        Untap,
-        UpkeepStarted,
+        UntapAndUpkeepStarted,
         Draw,
         Main,
         End
@@ -364,4 +398,6 @@ public class Game {
             this.card.resolve();
         }
     }
+
+    ;
 }

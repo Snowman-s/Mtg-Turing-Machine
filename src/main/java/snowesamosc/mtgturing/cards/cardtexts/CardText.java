@@ -36,6 +36,10 @@ public class CardText {
         return Collections.emptySet();
     }
 
+    public Set<AbilityOnStack> onDeadCard(Collection<? extends RealCard> deathCards) {
+        return Collections.emptySet();
+    }
+
     public void resolveThisSpell() {
 
     }

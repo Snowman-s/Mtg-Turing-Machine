@@ -1,10 +1,14 @@
 package snowesamosc.mtgturing.cards.cardtexts;
 
 import kotlin.Pair;
+import snowesamosc.mtgturing.abilityonstack.AbilityOnStack;
 import snowesamosc.mtgturing.cards.CardColor;
 import snowesamosc.mtgturing.cards.CardSubType;
+import snowesamosc.mtgturing.cards.RealCard;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 public class RoutingReanimator extends CardText {
     private final CardSubType originalDieType = CardSubType.Cleric;
@@ -49,5 +53,10 @@ public class RoutingReanimator extends CardText {
     @Override
     public List<Pair<CardColor, CardColor>> getReplaceColors() {
         return List.of(new Pair<>(this.originalCreateColor, this.createColor));
+    }
+
+    @Override
+    public Set<AbilityOnStack> onDeadCard(Collection<? extends RealCard> deathCards) {
+        return super.onDeadCard(deathCards);
     }
 }
