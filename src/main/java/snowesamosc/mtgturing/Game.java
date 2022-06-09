@@ -373,6 +373,16 @@ public class Game {
                     tokenPair.component1().field().add(tokenPair.component2());
                 }
         );
+
+        this.checkStaticAbility();
+
+        this.getFieldCardsExceptPhaseOut().stream()
+                .map(card -> card.getText().onPermanentEntered(
+                        tokens.stream()
+                                .map(pair -> pair.component2())
+                                .collect(Collectors.toList())
+                ))
+                .forEach(this::trigger);
     }
 
     public boolean hasHexProof(RealCard card) {

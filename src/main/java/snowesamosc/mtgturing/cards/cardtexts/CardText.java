@@ -41,6 +41,10 @@ public class CardText {
         return Collections.emptySet();
     }
 
+    public Set<AbilityOnStack> onPermanentEntered(Collection<? extends RealCard> enteredPermanents) {
+        return Collections.emptySet();
+    }
+
     public void resolveThisSpell() {
 
     }
