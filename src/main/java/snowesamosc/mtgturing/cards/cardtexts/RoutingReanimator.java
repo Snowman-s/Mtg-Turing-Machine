@@ -61,7 +61,6 @@ public class RoutingReanimator extends CardText {
         return this.createAbilitiesOnStackSet(deathCards.stream()
                 .filter(card -> card.getCardTypes().contains(CardType.Creature))
                 .filter(card -> card.getSubTypes().contains(RoutingReanimator.this.dieType))
-                .filter(card -> card.getController().equals(this.getOwner().getController()))
                 .map(card -> (Runnable) (() -> {
                             var owner = this.getOwner().getController();
                             if (owner.isEmpty()) return;

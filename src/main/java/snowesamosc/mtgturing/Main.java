@@ -101,7 +101,10 @@ public class Main extends PApplet {
             );
 
             var bob = this.createBob(attachList, createCardMap);
-            var alice = this.createAlice(attachList, createCardMap);
+            var tapeHeadToken = new CreatureToken(CardColor.Green, CardSubType.Cephalid, 3, 3);
+            bob.field().add(tapeHeadToken);
+
+            var alice = this.createAlice(attachList, tapeHeadToken, createCardMap);
 
             attachList.forEach(attach -> game.attach(attach.getMain(), attach.getSub()));
 
@@ -319,7 +322,7 @@ public class Main extends PApplet {
             AtomicReference<Float> lastNormalX = new AtomicReference<>(caX - this.getCardWidth() * 0.8F);
             AtomicReference<Float> lastTokenX = new AtomicReference<>(caX - this.getCardWidth());
             AtomicReference<CardKind> beforeCardType = new AtomicReference<>(null);
-            bob.field().stream()
+            game.getFieldsCard(bob).stream()
                     .filter(card -> !game.isAttachSub(card))
                     .sorted(comparator)
                     .forEach(
@@ -362,7 +365,7 @@ public class Main extends PApplet {
             AtomicReference<Float> lastNormalX = new AtomicReference<>(caX - this.getCardWidth() * 0.8F);
             AtomicReference<Float> lastTokenX = new AtomicReference<>(caX - this.getCardWidth());
             AtomicReference<CardKind> beforeCardType = new AtomicReference<>(null);
-            alice.field().stream()
+            game.getFieldsCard(alice).stream()
                     .filter(card -> !game.isAttachSub(card))
                     .sorted(comparator)
                     .forEach(
@@ -493,7 +496,7 @@ public class Main extends PApplet {
         this.popMatrix();
     }
 
-    private Player createAlice(List<AttachInfo> attachList, EnumMap<CardKind, RealCard.CardCreateData> map) {
+    private Player createAlice(List<AttachInfo> attachList, RealCard firstHeadToken, EnumMap<CardKind, RealCard.CardCreateData> map) {
         var fields = new ArrayList<RealCard>();
         attachList.forEach(attach -> {
             var card = RealCard.createCard(CardKind.CloakOfInvisibility, map);
@@ -504,12 +507,12 @@ public class Main extends PApplet {
         fields.add(RealCard.createCard(CardKind.WheelOfSunAndMoon, map));
         {
             var illusory = RealCard.createCard(CardKind.IllusoryGains, map);
-            var token = new CreatureToken(CardColor.Green, CardSubType.Cephalid, 3, 3);
-            var attach = new AttachInfo(token);
+
+            var attach = new AttachInfo(firstHeadToken);
             attach.setSub(illusory);
             attachList.add(attach);
+
             fields.add(illusory);
-            fields.add(token);
         }
         {
             RealCard card = RealCard.createCard(CardKind.SteelyResolve, map);

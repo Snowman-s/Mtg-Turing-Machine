@@ -18,5 +18,7 @@ public interface ContinuousEffect {
 
     Set<RealCard> getNotUntappableOnUntapStep();
 
+    Set<Pair<Player, RealCard>> getChangeController();
+
     Map<RealCard, Set<CardSubType>> addSubType();
 }

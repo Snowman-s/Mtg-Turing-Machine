@@ -2,7 +2,7 @@ package snowesamosc.mtgturing.cards.cardtexts;
 
 import snowesamosc.mtgturing.ContinuousEffect;
 import snowesamosc.mtgturing.ContinuousEffectAdapter;
-import snowesamosc.mtgturing.Player;
+import snowesamosc.mtgturing.Game;
 import snowesamosc.mtgturing.cards.CardSubType;
 import snowesamosc.mtgturing.cards.CardType;
 import snowesamosc.mtgturing.cards.RealCard;
@@ -17,8 +17,9 @@ public class PrismaticOmen extends CardText {
                     @Override
                     public Map<RealCard, Set<CardSubType>> addSubType() {
                         Map<RealCard, Set<CardSubType>> ret = new HashMap<>();
+                        var game = Game.getInstance();
                         PrismaticOmen.this.getOwner().getController()
-                                .map(Player::field)
+                                .map(game::getFieldsCard)
                                 .orElse(List.of())
                                 .stream()
                                 .filter(RealCard::isPhaseIn)

@@ -25,6 +25,8 @@ public class Game {
     private final Set<RealCard> shroudFromEffect = new HashSet<>();
     private final Set<RealCard> phasingFromEffect = new HashSet<>();
     private final Set<RealCard> untappableOnUntapStepFromEffect = new HashSet<>();
+
+    private final Set<Pair<Player, RealCard>> changeControllerFromEffect = new HashSet<>();
     private final List<Attach> attachList = new ArrayList<>();
     private final List<AbilityOnStack> triggeredAbility = new ArrayList<>();
     private final Deque<OnStackObject> stack = new ArrayDeque<>();
@@ -57,11 +59,7 @@ public class Game {
     private void checkStaticAbility() {
         List<ContinuousEffect> effectFromStaticAbility = new ArrayList<>();
 
-        this.bob.field().stream()
-                .filter(RealCard::isPhaseIn)
-                .forEach(card -> card.getText().getStaticEffect().ifPresent(effectFromStaticAbility::add));
-        this.alice.field().stream()
-                .filter(RealCard::isPhaseIn)
+        this.getFieldCardsExceptPhaseOut()
                 .forEach(card -> card.getText().getStaticEffect().ifPresent(effectFromStaticAbility::add));
 
         //カウンター
@@ -73,9 +71,14 @@ public class Game {
         this.shroudFromEffect.clear();
         this.phasingFromEffect.clear();
         this.untappableOnUntapStepFromEffect.clear();
+        this.changeControllerFromEffect.clear();
 
         Supplier<Stream<ContinuousEffect>> effects = () ->
                 Stream.concat(effectFromStaticAbility.stream(), this.effectUntilTurnEnd.stream());
+
+        effects.get()
+                .map(ContinuousEffect::getChangeController)
+                .forEach(this.changeControllerFromEffect::addAll);
 
         effects.get()
                 .map(ContinuousEffect::addSubType)
@@ -217,10 +220,11 @@ public class Game {
     }
 
     public void onUntapAndUpkeepStarted() {
+        var game = Game.getInstance();
         //アンタップ
         this.logger.accept("Untap step started.");
-        var phasingCards = this.getTurnPlayer().field().stream()
-                .filter(card -> (card.canPhaseInIndependently()) || Game.getInstance().hasPhasing(card))
+        var phasingCards = game.getFieldsCard(this.getTurnPlayer()).stream()
+                .filter(card -> (card.canPhaseInIndependently()) || game.hasPhasing(card))
                 .collect(Collectors.toSet());
         if (phasingCards.size() > 0) {
             phasingCards.forEach(RealCard::reversePhasingOnUntapPhase);
@@ -228,7 +232,7 @@ public class Game {
             this.logger.accept(this.cardNameGetter.apply(phasingCards) + " were phase in/out.");
         }
 
-        var untapCard = this.getTurnPlayer().field().stream()
+        var untapCard = game.getFieldsCard(this.getTurnPlayer()).stream()
                 .filter(card -> !this.untappableOnUntapStepFromEffect.contains(card))
                 .filter(RealCard::isTapped)
                 .collect(Collectors.toSet());
@@ -274,6 +278,19 @@ public class Game {
                 .forEach(ret::add);
 
         return ret;
+    }
+
+    public List<RealCard> getFieldsCard(Player player) {
+        if (!this.getPlayers().contains(player)) return Collections.emptyList();
+
+        var playersCard = new ArrayList<>(player.field());
+
+        for (Pair<Player, RealCard> pair : this.changeControllerFromEffect) {
+            if (pair.component1() == player) playersCard.add(pair.component2());
+            else playersCard.remove(pair.component2());
+        }
+
+        return playersCard;
     }
 
     public void addUntilTurnEndEffect(Collection<? extends ContinuousEffect> effects) {
@@ -343,6 +360,12 @@ public class Game {
     }
 
     public void createToken(Collection<Pair<Player, ? extends CreatureToken>> tokens) {
+        this.logger.accept(this.cardNameGetter.apply(tokens.stream()
+                        .map(pair -> pair.component2())
+                        .collect(Collectors.toList())
+                ) + " were created."
+        );
+
         tokens.forEach(
                 tokenPair -> {
                     if (!this.getPlayers().contains(tokenPair.component1())) return;
@@ -410,6 +433,4 @@ public class Game {
             this.card.resolve();
         }
     }
-
-    ;
 }

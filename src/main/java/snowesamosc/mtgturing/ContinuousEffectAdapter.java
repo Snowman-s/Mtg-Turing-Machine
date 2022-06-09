@@ -35,6 +35,11 @@ public class ContinuousEffectAdapter implements ContinuousEffect {
     }
 
     @Override
+    public Set<Pair<Player, RealCard>> getChangeController() {
+        return Collections.emptySet();
+    }
+
+    @Override
     public Map<RealCard, Set<CardSubType>> addSubType() {
         return Collections.emptyMap();
     }
