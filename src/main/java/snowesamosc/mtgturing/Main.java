@@ -108,6 +108,12 @@ public class Main extends PApplet {
 
             attachList.forEach(attach -> game.attach(attach.getMain(), attach.getSub()));
 
+            {
+                var wheel = RealCard.createCard(CardKind.WheelOfSunAndMoon, createCardMap);
+                alice.field().add(wheel);
+                Game.getInstance().attach(alice, wheel);
+            }
+
             game.init(
                     bob,
                     alice,
@@ -505,9 +511,6 @@ public class Main extends PApplet {
             fields.add(card);
         });
 
-        var wheel = RealCard.createCard(CardKind.WheelOfSunAndMoon, map);
-        fields.add(wheel);
-
         {
             var illusory = RealCard.createCard(CardKind.IllusoryGains, map);
 
@@ -580,7 +583,7 @@ public class Main extends PApplet {
                 .filter(card -> card.getCardTypes().contains(CardType.Creature))
                 .forEach(card -> card.addSubType(Set.of(CardSubType.AssemblyWorker)));
 
-        var alice = new Player(RealCard.createCards(List.of(
+        return new Player(RealCard.createCards(List.of(
                 CardKind.CleansingBeam,
                 CardKind.CoalitionVictory,
                 CardKind.SoulSnuffers
@@ -589,10 +592,6 @@ public class Main extends PApplet {
                         CardKind.Infest
                 ), map),
                 fields);
-
-        wheel.asThatCardText(WheelOfSunAndMoon.class, text -> text.setEnchantedPlayer(alice));
-
-        return alice;
     }
 
     private Player createBob(List<AttachInfo> attachRequire, EnumMap<CardKind, RealCard.CardCreateData> map) {

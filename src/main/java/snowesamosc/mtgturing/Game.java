@@ -34,6 +34,7 @@ public class Game {
     private final Set<Function<Player, Optional<Runnable>>> replaceDrawStep = new HashSet<>();
 
     private final List<Attach> attachList = new ArrayList<>();
+    private final List<Pair<Player, RealCard>> playerAttachList = new ArrayList<>();
     private final List<AbilityOnStack> triggeredAbility = new ArrayList<>();
     private final Deque<OnStackObject> stack = new ArrayDeque<>();
     private Player bob;
@@ -181,12 +182,21 @@ public class Game {
         this.attachList.add(new Attach(main, sub));
     }
 
+    public void attach(Player player, RealCard sub) {
+        this.playerAttachList.removeIf(pair -> pair.component2() == sub);
+        this.playerAttachList.add(new Pair<>(player, sub));
+    }
+
     public Optional<RealCard> attachingCard(RealCard main) {
         return this.attachList.stream().filter(attach -> attach.main() == main).findAny().map(Attach::sub);
     }
 
     public Optional<RealCard> attachedCard(RealCard sub) {
         return this.attachList.stream().filter(attach -> attach.sub() == sub).findAny().map(Attach::main);
+    }
+
+    public Optional<Player> attachedPlayer(RealCard sub) {
+        return this.playerAttachList.stream().filter(pair -> pair.component2() == sub).findAny().map(Pair::component1);
     }
 
     public boolean isAttachSub(RealCard sub) {
