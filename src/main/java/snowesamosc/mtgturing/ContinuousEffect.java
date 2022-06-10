@@ -5,8 +5,10 @@ import snowesamosc.mtgturing.cards.CardSubType;
 import snowesamosc.mtgturing.cards.RealCard;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 public interface ContinuousEffect {
     Map<RealCard, Pair<Integer, Integer>> addPT();
@@ -21,7 +23,9 @@ public interface ContinuousEffect {
 
     Set<Pair<Player, RealCard>> getChangeController();
 
-    Set<Consumer<RealCard>> getReplaceCardToGY();
+    Set<BiConsumer<RealCard, Player>> getReplaceCardToGY();
+
+    Set<Function<Player, Optional<Runnable>>> getReplaceDrawStep();
 
     Map<RealCard, Set<CardSubType>> addSubType();
 }

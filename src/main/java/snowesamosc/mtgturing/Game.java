@@ -9,6 +9,7 @@ import snowesamosc.mtgturing.cards.RealCard;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -28,7 +29,9 @@ public class Game {
 
     private final Set<Pair<Player, RealCard>> changeControllerFromEffect = new HashSet<>();
 
-    private final Set<Consumer<RealCard>> replaceCardToGY = new HashSet<>();
+    private final Set<BiConsumer<RealCard, Player>> replaceCardToGY = new HashSet<>();
+
+    private final Set<Function<Player, Optional<Runnable>>> replaceDrawStep = new HashSet<>();
 
     private final List<Attach> attachList = new ArrayList<>();
     private final List<AbilityOnStack> triggeredAbility = new ArrayList<>();
@@ -76,6 +79,7 @@ public class Game {
         this.untappableOnUntapStepFromEffect.clear();
         this.changeControllerFromEffect.clear();
         this.replaceCardToGY.clear();
+        this.replaceDrawStep.clear();
 
         Supplier<Stream<ContinuousEffect>> effects = () ->
                 Stream.concat(effectFromStaticAbility.stream(), this.effectUntilTurnEnd.stream());
@@ -123,6 +127,10 @@ public class Game {
         effects.get()
                 .map(ContinuousEffect::getReplaceCardToGY)
                 .forEach(this.replaceCardToGY::addAll);
+
+        effects.get()
+                .map(ContinuousEffect::getReplaceDrawStep)
+                .forEach(this.replaceDrawStep::addAll);
     }
 
     private void doStateBasedAction() {
@@ -185,6 +193,18 @@ public class Game {
         return this.attachList.stream().anyMatch(attach -> attach.sub() == sub);
     }
 
+    private void toNextCheckpoint() {
+        var newCheckpointIndex = Arrays.stream(GameCheckpoint.values()).toList().indexOf(this.gameCheckpoint) + 1;
+        if (newCheckpointIndex > GameCheckpoint.values().length - 1) {
+            this.effectUntilTurnEnd.clear();
+            this.gameCheckpoint = GameCheckpoint.UntapAndUpkeepStarted;
+            this.turnPlayer = this.turnPlayer == this.bob ? this.alice : this.bob;
+            this.logger.accept("Now " + this.getPlayerName(this.turnPlayer) + "'s turn.");
+        } else {
+            this.gameCheckpoint = GameCheckpoint.values()[newCheckpointIndex];
+        }
+    }
+
     public void toNext() {
         if (!this.stack.isEmpty()) {
             var resolveCard = this.stack.pop();
@@ -198,20 +218,36 @@ public class Game {
                 this.toGY(resolveCard.getSource(), controller.get());
             }
         } else {
-            var newCheckpointIndex = Arrays.stream(GameCheckpoint.values()).toList().indexOf(this.gameCheckpoint) + 1;
-            if (newCheckpointIndex > GameCheckpoint.values().length - 1) {
-                this.effectUntilTurnEnd.clear();
-                this.gameCheckpoint = GameCheckpoint.UntapAndUpkeepStarted;
-                this.turnPlayer = this.turnPlayer == this.bob ? this.alice : this.bob;
-                this.logger.accept("Now " + this.getPlayerName(this.turnPlayer) + "'s turn.");
-            } else {
-                this.gameCheckpoint = GameCheckpoint.values()[newCheckpointIndex];
+            this.toNextCheckpoint();
+
+            //チェックポイントスキップ
+            replaceCheckpointLoop:
+            while (true) {
+                switch (this.gameCheckpoint) {
+                    case DrawStep -> {
+                        var replacer = this.replaceDrawStep.stream()
+                                .map(func -> func.apply(this.turnPlayer))
+                                .filter(Optional::isPresent)
+                                .map(Optional::get).toList();
+                        if (replacer.size() > 0) {
+                            this.logger.accept(this.getPlayerName(this.turnPlayer) + "'s draw step is replaced.");
+                            this.selectByPlayer(replacer, this.turnPlayer).run();
+                            this.toNextCheckpoint();
+                        } else {
+                            break replaceCheckpointLoop;
+                        }
+                    }
+                    default -> {
+                        break replaceCheckpointLoop;
+                    }
+                }
             }
 
             this.checkStaticAbility();
 
             switch (this.gameCheckpoint) {
                 case UntapAndUpkeepStarted -> this.onUntapAndUpkeepStarted();
+                case DrawStep -> this.onDrawStep();
             }
         }
 
@@ -269,6 +305,11 @@ public class Game {
         this.getFieldCardsExceptPhaseOut().stream()
                 .map(card -> card.getText().onUpkeepStarted())
                 .forEach(this::trigger);
+    }
+
+    public void onDrawStep() {
+        this.turnPlayer.hands().add(this.turnPlayer.deck().remove(0));
+        this.checkStaticAbility();
     }
 
     public Pair<Integer, Integer> getPT(RealCard card) {
@@ -450,7 +491,7 @@ public class Game {
 
         this.logger.accept(this.cardNameGetter.apply(Collections.singleton(card)) +
                 " was going to be go to GY, but the process is replaced.");
-        replacer.accept(card);
+        replacer.accept(card, player);
     }
 
     public <T> T selectByPlayer(Collection<? extends T> collection, Player player) {
@@ -476,7 +517,7 @@ public class Game {
 
     private enum GameCheckpoint {
         UntapAndUpkeepStarted,
-        Draw,
+        DrawStep,
         Main,
         End
     }

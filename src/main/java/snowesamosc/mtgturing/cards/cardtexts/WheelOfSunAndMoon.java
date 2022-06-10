@@ -8,7 +8,7 @@ import snowesamosc.mtgturing.cards.RealCard;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 public class WheelOfSunAndMoon extends CardText {
     private Player enchantedPlayer = null;
@@ -22,10 +22,14 @@ public class WheelOfSunAndMoon extends CardText {
         return Optional.of(
                 new ContinuousEffectAdapter() {
                     @Override
-                    public Set<Consumer<RealCard>> getReplaceCardToGY() {
+                    public Set<BiConsumer<RealCard, Player>> getReplaceCardToGY() {
+
                         return Collections.singleton(
-                                card -> card.getController()
-                                        .ifPresent(player -> player.deck().add(card))
+                                (card, player) -> {
+                                    if (player.equals(WheelOfSunAndMoon.this.enchantedPlayer)) {
+                                        player.deck().add(card);
+                                    }
+                                }
                         );
                     }
                 }

@@ -6,8 +6,10 @@ import snowesamosc.mtgturing.cards.RealCard;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 public class ContinuousEffectAdapter implements ContinuousEffect {
     @Override
@@ -41,7 +43,12 @@ public class ContinuousEffectAdapter implements ContinuousEffect {
     }
 
     @Override
-    public Set<Consumer<RealCard>> getReplaceCardToGY() {
+    public Set<BiConsumer<RealCard, Player>> getReplaceCardToGY() {
+        return Collections.emptySet();
+    }
+
+    @Override
+    public Set<Function<Player, Optional<Runnable>>> getReplaceDrawStep() {
         return Collections.emptySet();
     }
 

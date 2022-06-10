@@ -504,7 +504,10 @@ public class Main extends PApplet {
             card.setPhaseIn(attach.getMain().isPhaseIn() ? RealCard.PhaseType.PhaseIn : RealCard.PhaseType.IndirectlyPhaseOut);
             fields.add(card);
         });
-        fields.add(RealCard.createCard(CardKind.WheelOfSunAndMoon, map));
+
+        var wheel = RealCard.createCard(CardKind.WheelOfSunAndMoon, map);
+        fields.add(wheel);
+
         {
             var illusory = RealCard.createCard(CardKind.IllusoryGains, map);
 
@@ -577,7 +580,7 @@ public class Main extends PApplet {
                 .filter(card -> card.getCardTypes().contains(CardType.Creature))
                 .forEach(card -> card.addSubType(Set.of(CardSubType.AssemblyWorker)));
 
-        return new Player(RealCard.createCards(List.of(
+        var alice = new Player(RealCard.createCards(List.of(
                 CardKind.CleansingBeam,
                 CardKind.CoalitionVictory,
                 CardKind.SoulSnuffers
@@ -586,6 +589,10 @@ public class Main extends PApplet {
                         CardKind.Infest
                 ), map),
                 fields);
+
+        wheel.asThatCardText(WheelOfSunAndMoon.class, text -> text.setEnchantedPlayer(alice));
+
+        return alice;
     }
 
     private Player createBob(List<AttachInfo> attachRequire, EnumMap<CardKind, RealCard.CardCreateData> map) {
