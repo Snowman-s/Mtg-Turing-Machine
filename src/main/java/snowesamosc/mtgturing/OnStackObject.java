@@ -10,4 +10,6 @@ public interface OnStackObject {
     Optional<Player> getController();
 
     void resolve();
+
+    boolean toGYAfterResolved();
 }

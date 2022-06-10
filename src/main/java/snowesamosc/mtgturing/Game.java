@@ -27,6 +27,9 @@ public class Game {
     private final Set<RealCard> untappableOnUntapStepFromEffect = new HashSet<>();
 
     private final Set<Pair<Player, RealCard>> changeControllerFromEffect = new HashSet<>();
+
+    private final Set<Consumer<RealCard>> replaceCardToGY = new HashSet<>();
+
     private final List<Attach> attachList = new ArrayList<>();
     private final List<AbilityOnStack> triggeredAbility = new ArrayList<>();
     private final Deque<OnStackObject> stack = new ArrayDeque<>();
@@ -72,6 +75,7 @@ public class Game {
         this.phasingFromEffect.clear();
         this.untappableOnUntapStepFromEffect.clear();
         this.changeControllerFromEffect.clear();
+        this.replaceCardToGY.clear();
 
         Supplier<Stream<ContinuousEffect>> effects = () ->
                 Stream.concat(effectFromStaticAbility.stream(), this.effectUntilTurnEnd.stream());
@@ -115,6 +119,10 @@ public class Game {
         effects.get()
                 .map(ContinuousEffect::getNotUntappableOnUntapStep)
                 .forEach(this.untappableOnUntapStepFromEffect::addAll);
+
+        effects.get()
+                .map(ContinuousEffect::getReplaceCardToGY)
+                .forEach(this.replaceCardToGY::addAll);
     }
 
     private void doStateBasedAction() {
@@ -184,6 +192,11 @@ public class Game {
             this.checkStaticAbility();
             resolveCard.resolve();
             this.checkStaticAbility();
+
+            var controller = resolveCard.getController();
+            if (controller.isPresent() && resolveCard.toGYAfterResolved()) {
+                this.toGY(resolveCard.getSource(), controller.get());
+            }
         } else {
             var newCheckpointIndex = Arrays.stream(GameCheckpoint.values()).toList().indexOf(this.gameCheckpoint) + 1;
             if (newCheckpointIndex > GameCheckpoint.values().length - 1) {
@@ -203,17 +216,30 @@ public class Game {
         }
 
         this.doStateBasedAction();
-        this.triggeredAbility.stream()
-                .sorted(Comparator.comparingInt(p -> p.getController()
-                        .map(c -> {
-                            var players = this.getPlayers();
-                            var i = players.indexOf(c);
-                            var turnI = players.indexOf(this.getTurnPlayer());
-                            var deltaI = i - turnI;
-                            return deltaI >= 0 ? deltaI : i + (players.size() - turnI);
-                        })
-                        .orElse(0)))
-                .forEach(this.stack::push);
+
+        //同じプレイヤーの誘発があったらそのプレイヤーに選ばせる
+        var abilityGroup = this.triggeredAbility.stream()
+                .collect(Collectors.groupingBy(abilityOnStack -> abilityOnStack.getController().orElse(null)));
+
+        abilityGroup.entrySet().stream()
+                .sorted(Comparator.comparingInt(entry -> {
+                    var player = entry.getKey();
+
+                    var players = this.getPlayers();
+                    var i = players.indexOf(player);
+                    var turnI = players.indexOf(this.getTurnPlayer());
+                    var deltaI = i - turnI;
+                    return deltaI >= 0 ? deltaI : i + (players.size() - turnI);
+                }))
+                .forEach(entry -> {
+                    var p = entry.getKey();
+                    if (p == null) {
+                        this.stack.addAll(this.sortByPlayer(abilityGroup.get(p), p));
+                    } else {
+                        this.stack.addAll(this.sortByPlayer(abilityGroup.get(p), p));
+                    }
+                });
+
         this.triggeredAbility.clear();
 
         //そして優先権を得る
@@ -417,6 +443,37 @@ public class Game {
         this.stack.push(new CastedSpell(controller, card));
     }
 
+    public void toGY(RealCard card, Player player) {
+        if (this.replaceCardToGY.isEmpty()) throw new RuntimeException("Cannot send cards to non-existing GY!");
+
+        var replacer = this.selectByPlayer(this.replaceCardToGY, player);
+
+        this.logger.accept(this.cardNameGetter.apply(Collections.singleton(card)) +
+                " was going to be go to GY, but the process is replaced.");
+        replacer.accept(card);
+    }
+
+    public <T> T selectByPlayer(Collection<? extends T> collection, Player player) {
+        if (collection.size() == 0) {
+            throw new RuntimeException("Cannot chose from empty collection.");
+        } else if (collection.size() > 1) {
+            throw new RuntimeException(this.getPlayerName(player) + " is so cheap robot that it cannot chose from "
+                    + collection.size() + "-length collection.");
+        }
+
+        var ret = collection.stream().findFirst();
+        return ret.get();
+    }
+
+    public <T> List<T> sortByPlayer(Collection<? extends T> collection, Player player) {
+        if (collection.size() > 1) {
+            throw new RuntimeException(this.getPlayerName(player) + " is so cheap robot that it cannot sort "
+                    + collection.size() + "-length collection.");
+        }
+
+        return List.copyOf(collection);
+    }
+
     private enum GameCheckpoint {
         UntapAndUpkeepStarted,
         Draw,
@@ -441,6 +498,11 @@ public class Game {
         @Override
         public void resolve() {
             this.card.resolve();
+        }
+
+        @Override
+        public boolean toGYAfterResolved() {
+            return this.card.toGYAfterResolved();
         }
     }
 }

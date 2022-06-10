@@ -216,6 +216,11 @@ public class RealCard implements OnStackObject {
         this.cardText.resolveThisSpell();
     }
 
+    @Override
+    public boolean toGYAfterResolved() {
+        return true;
+    }
+
     public enum PhaseType {
         PhaseIn, DirectlyPhaseOut, IndirectlyPhaseOut
     }

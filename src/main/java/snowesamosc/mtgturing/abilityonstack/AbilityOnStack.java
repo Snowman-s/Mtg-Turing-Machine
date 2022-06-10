@@ -27,4 +27,9 @@ public abstract class AbilityOnStack implements OnStackObject {
 
     @Override
     public abstract void resolve();
+
+    @Override
+    public boolean toGYAfterResolved() {
+        return false;
+    }
 }

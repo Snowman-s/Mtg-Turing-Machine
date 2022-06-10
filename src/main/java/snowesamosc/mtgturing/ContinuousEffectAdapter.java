@@ -7,6 +7,7 @@ import snowesamosc.mtgturing.cards.RealCard;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public class ContinuousEffectAdapter implements ContinuousEffect {
     @Override
@@ -36,6 +37,11 @@ public class ContinuousEffectAdapter implements ContinuousEffect {
 
     @Override
     public Set<Pair<Player, RealCard>> getChangeController() {
+        return Collections.emptySet();
+    }
+
+    @Override
+    public Set<Consumer<RealCard>> getReplaceCardToGY() {
         return Collections.emptySet();
     }
 
